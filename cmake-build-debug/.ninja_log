@@ -1,0 +1,9 @@
+# ninja log v6
+3	2769	1733491970531404178	CMakeFiles/hpca_nn.dir/main.cu.o	b2702114a80c6b48
+2	748	1733494474945596907	CMakeFiles/hpca_nn.dir/main.cpp.o	d64010069ba44535
+2732	2795	1733493034802051259	CMakeFiles/hpca_nn.dir/cmake_device_link.o	6eed7065978abd2b
+748	841	1733494475691596002	hpca_nn	2c1daa9a68fc459
+1	2731	1733493032071030067	CMakeFiles/hpca_nn.dir/default_main.cu.o	3d3dc6389fafe95f
+6	423	1733494453735627863	CMakeFiles/hpca_nn.dir/neural_network.cpp.o	6b9c6cbf0f985ebc
+8	497	1733494453737627860	CMakeFiles/hpca_nn.dir/linear_layer.cpp.o	ef819e195af1ecd6
+9	544	1733494453738627858	CMakeFiles/hpca_nn.dir/neuron.cpp.o	7da3f9d16632af72

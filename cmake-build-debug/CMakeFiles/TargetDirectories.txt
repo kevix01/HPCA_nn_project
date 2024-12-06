@@ -1,0 +1,3 @@
+/home/kevin/Scrivania/HPCA/HPCA_nn_project/cmake-build-debug/CMakeFiles/hpca_nn.dir
+/home/kevin/Scrivania/HPCA/HPCA_nn_project/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/kevin/Scrivania/HPCA/HPCA_nn_project/cmake-build-debug/CMakeFiles/rebuild_cache.dir
