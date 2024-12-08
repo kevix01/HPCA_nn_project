@@ -18,6 +18,9 @@ add_executable(hpca_nn
         neural_network.cpp
         linear_layer.cpp
         neuron.cpp
+        device_type.h
+        cuda_matmul.h
+        cuda_matmul.cu
 )
 
 # Set target properties
