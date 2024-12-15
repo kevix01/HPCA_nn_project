@@ -32,7 +32,7 @@ __global__ void matMulKernel(float *a, float *b, float *ab, int M, int K, int N)
     if (row < M && col < N) {
         ab[row * N + col] = result;
         // Debug print to log the result
-        printf("CUDA - Kernel result at row %d, col %d: %f\n", row, col, result);
+        // printf("CUDA - Kernel result at row %d, col %d: %f\n", row, col, result);
     }
 }
 
@@ -40,7 +40,7 @@ void matMul(float *a, float *b, float *ab, int M, int K, int N) {
     float *d_a, *d_b, *d_ab;
     size_t sizeA = M * K * sizeof(float);
     size_t sizeB = K * N * sizeof(float);
-    size_t sizeAB = M * N * sizeof(float);
+    size_t sizeAB = M * 1 * sizeof(float);
 
     cudaMalloc(&d_a, sizeA);
     cudaMalloc(&d_b, sizeB);
@@ -59,6 +59,7 @@ void matMul(float *a, float *b, float *ab, int M, int K, int N) {
     cudaFree(d_a);
     cudaFree(d_b);
     cudaFree(d_ab);
+    // std::cout << "CUDA - Kernel result at row 0, col 0: " << ab[0] << std::endl;
 }
 
 

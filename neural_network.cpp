@@ -3,80 +3,78 @@
 //
 
 #include "neural_network.h"
-
+#include <cmath>
 #include <iostream>
+#include <algorithm>
 
-NeuralNetwork::NeuralNetwork(DeviceType device) : device(device) {}
-
-void NeuralNetwork::addInputLayer(int numInputs) {
-    inputData.resize(numInputs);
+NeuralNetwork::NeuralNetwork(DeviceType device) {
+    this->device = device;
 }
 
-void NeuralNetwork::addLayer(int numInputs, int numNeurons) {
-    layers.emplace_back(LinearLayer(numInputs, numNeurons, device));
+void NeuralNetwork::addLayer(int inputSize, int outputSize, ActivationFunction activation) {
+    layers.push_back(std::make_unique<LinearLayer>(inputSize, outputSize, activation, device));
 }
 
-void NeuralNetwork::train(const std::vector<std::vector<float>>& inputs, const std::vector<std::vector<float>>& outputs, float learningRate, int epochs, int batchSize) {
+void NeuralNetwork::train(const std::vector<std::vector<float>>& inputs, const std::vector<int>& labels,
+                          float learningRate, int epochs, int batchSize) {
     for (int epoch = 0; epoch < epochs; ++epoch) {
+        float totalLoss = 0.0f;
+        int correct = 0;
+
         for (size_t i = 0; i < inputs.size(); i += batchSize) {
-            std::vector<std::vector<float>> inputBatch(inputs.begin() + i, inputs.begin() + std::min(i + batchSize, inputs.size()));
-            std::vector<std::vector<float>> outputBatch(outputs.begin() + i, outputs.begin() + std::min(i + batchSize, outputs.size()));
+            int currentBatchSize = std::min(batchSize, static_cast<int>(inputs.size() - i));
+            for (int j = 0; j < currentBatchSize; ++j) {
+                auto input = inputs[i + j];
+                auto output = forward(input);
+                int label = labels[i + j];
 
-            std::vector<std::vector<float>> batchOutputs;
-            forward(inputBatch, batchOutputs);
-            backward(outputBatch, batchOutputs);
-            updateWeights(learningRate, batchSize);
-        }
-    }
-}
+                totalLoss += computeLoss(output, label);
+                correct += (output[0] >= 0.5f) == label;
 
-void NeuralNetwork::forward(const std::vector<std::vector<float>>& inputs, std::vector<std::vector<float>>& batchOutputs) {
-    batchOutputs = inputs;
-    // std::cout << inputs.size() << std::endl;
-   /* for (size_t i = 0; i < inputs.size(); ++i) {
-        std::cout << "Input: ";
-        for (size_t j = 0; j < inputs[i].size(); ++j) {
-            std::cout << inputs[i][j] << " ";
-        }
-    }*/
-    int layerIndex = 0;
-    for (auto& layer : layers) {
-        std::cout << "Layer " << layerIndex++ << std::endl;
-        std::vector<std::vector<float>> nextBatchOutputs;
-        for (const auto& input : batchOutputs) {
-            nextBatchOutputs.push_back(layer.forward(input));
-        }
-        batchOutputs = nextBatchOutputs;
-    }
-}
-
-void NeuralNetwork::backward(const std::vector<std::vector<float>>& targets, const std::vector<std::vector<float>>& outputs) {
-    for (int i = layers.size() - 1; i >= 0; --i) {
-        if (i == layers.size() - 1) {
-            for (size_t j = 0; j < outputs.size(); ++j) {
-                const auto& output = outputs[j];
-                const auto& target = targets[j];
-                std::vector<float> errors;
-                std::vector<float> deltas;
-                for (size_t k = 0; k < output.size(); ++k) {
-                    float error = target[k] - output[k];
-                    errors.push_back(error);
-                    deltas.push_back(error * output[k] * (1 - output[k])); // Simplified example
-                }
-                layers[i].backward(deltas);
+                backward(output, label, learningRate);
             }
-        } else {
-            std::vector<float> nextLayerDeltas = layers[i + 1].computeDeltas();
-            layers[i].backward(nextLayerDeltas);
         }
+
+        float accuracy = static_cast<float>(correct) / inputs.size();
+        std::cout << "Epoch " << epoch + 1 << ", Loss: " << totalLoss / inputs.size()
+                  << ", Accuracy: " << accuracy << std::endl;
     }
 }
 
-void NeuralNetwork::updateWeights(float learningRate, int batchSize) {
+int NeuralNetwork::predict(const std::vector<float>& input) {
+    auto output = forward(input);
+    return output[0] >= 0.5f ? 1 : 0;
+}
+
+std::vector<float> NeuralNetwork::forward(const std::vector<float>& input) {
+    std::vector<float> activation = input;
     for (auto& layer : layers) {
-        layer.updateWeights(learningRate / batchSize);
+        activation = layer->forward(activation);
+    }
+    return activation;
+}
+
+void NeuralNetwork::backward(const std::vector<float>& output, int label, float learningRate) {
+    std::vector<float> grad = {output[0] - static_cast<float>(label)}; // Binary cross-entropy derivative
+
+    for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
+        grad = (*it)->backward(grad, learningRate);
     }
 }
+
+float NeuralNetwork::computeLoss(const std::vector<float>& output, int label) {
+    float loss = - (label * std::log(output[0]) + (1 - label) * std::log(1 - output[0]));
+    return loss;
+}
+
+float NeuralNetwork::computeAccuracy(const std::vector<std::vector<float>>& inputs, const std::vector<int>& labels) {
+    int correct = 0;
+    for (size_t i = 0; i < inputs.size(); ++i) {
+        correct += (predict(inputs[i]) == labels[i]);
+    }
+    return static_cast<float>(correct) / inputs.size();
+}
+
 
 
 

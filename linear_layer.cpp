@@ -3,54 +3,94 @@
 //
 
 #include "linear_layer.h"
-#include "cuda_matmul.h"
 #include <cmath>
 #include <iostream>
-#include <cstdlib>
+#include <random>
+#include "cuda_matmul.h"
 
-LinearLayer::LinearLayer(int numInputs, int numNeurons, DeviceType device) : device(device) {
-    weights.resize(numNeurons, std::vector<float>(numInputs));
-    biases.resize(numNeurons);
-    outputs.resize(numNeurons);
-    deltas.resize(numNeurons);
+LinearLayer::LinearLayer(int inputSize, int outputSize, ActivationFunction activation, DeviceType device, unsigned int seed)
+    : inputSize(inputSize), outputSize(outputSize), activation(activation) {
+    this->device = device;
+    std::mt19937 gen(seed);  // Use the provided seed for reproducibility
+    std::normal_distribution<> dis(0.0, 1.0 / std::sqrt(inputSize)); // Normal distribution initialization
 
-    for (int i = 0; i < numNeurons; ++i) {
-        for (int j = 0; j < numInputs; ++j) {
-            weights[i][j] = static_cast<float>(rand()) / RAND_MAX; // Initialize weights randomly
-        }
-        biases[i] = static_cast<float>(rand()) / RAND_MAX; // Initialize biases randomly
+    weights.resize(inputSize * outputSize);
+    biases.resize(outputSize);
+
+    for (auto& weight : weights) {
+        weight = dis(gen);
+    }
+
+    for (auto& bias : biases) {
+        bias = 0.0f; // Initialize biases to zero
     }
 }
 
-std::vector<float> LinearLayer::forward(const std::vector<float>& inputs) {
-    if (device == CPU) {
-        for (size_t i = 0; i < weights.size(); ++i) {
+
+std::vector<float> LinearLayer::forward(const std::vector<float>& input) {
+    inputCache = input;
+    std::vector<float> output(outputSize);
+    if (device == CPU){
+        for (int i = 0; i < outputSize; ++i) {
             float sum = biases[i];
-            for (size_t j = 0; j < inputs.size(); ++j) {
-                sum += weights[i][j] * inputs[j];
+            for (int j = 0; j < inputSize; ++j) {
+                sum += input[j] * weights[i * inputSize + j];
             }
-            std::cout << "CPU - Pre-activation output neuron " << i << ": " << sum << std::endl;
-            outputs[i] = activationFunction(sum); // Sigmoid activation
-            std::cout << "CPU - Output neuron " << i << ": " << outputs[i] << std::endl;
+            output[i] = activate(sum);
         }
     } else if (device == CUDA) {
-        matMulCuda(inputs, outputs);
-        for (size_t i = 0; i < outputs.size(); ++i) {
-            outputs[i] += biases[i];
-            std::cout << "CUDA - Pre-activation output neuron " << i << ": " << outputs[i] << std::endl;
-            outputs[i] = activationFunction(outputs[i]); // Adding bias and applying activation function
-            std::cout << "CUDA - Output neuron " << i << ": " << outputs[i] << std::endl;
+        matMulCuda(input, output);
+        for (size_t i = 0; i < output.size(); ++i) {
+            output[i] += biases[i];
+            output[i] = activate(output[i]);
         }
     }
-    return outputs;
+    outputCache = output;
+    return output;
 }
 
+std::vector<float> LinearLayer::backward(const std::vector<float>& grad, float learningRate) {
+    std::vector<float> gradInput(inputSize, 0.0f);
+
+    for (int i = 0; i < outputSize; ++i) {
+        float delta = grad[i] * activateDerivative(outputCache[i]);
+
+        for (int j = 0; j < inputSize; ++j) {
+            gradInput[j] += delta * weights[i * inputSize + j];
+            weights[i * inputSize + j] -= learningRate * delta * inputCache[j];
+        }
+
+        biases[i] -= learningRate * delta;
+    }
+
+    return gradInput;
+}
+
+float LinearLayer::activate(float x) {
+    if (activation == ActivationFunction::Sigmoid) {
+        return 1.0f / (1.0f + std::exp(-x));
+    } else if (activation == ActivationFunction::ReLU) {
+        return std::max(0.0f, x);
+    }
+    return 0.0f;
+}
+
+float LinearLayer::activateDerivative(float x) {
+    if (activation == ActivationFunction::Sigmoid) {
+        float sig = activate(x);
+        return sig * (1.0f - sig);
+    } else if (activation == ActivationFunction::ReLU) {
+        return x > 0.0f ? 1.0f : 0.0f;
+    }
+    return 0.0f;
+}
 
 void LinearLayer::matMulCuda(const std::vector<float>& inputs, std::vector<float>& outputs) {
-    int M = weights.size(); // Number of neurons
-    int K = weights[0].size(); // Number of inputs
-    int N = 2; // Single input vector for each neuron
-
+    int M = outputs.size(); // Number of neurons
+    int K = inputs.size(); // Number of inputs
+    int N = outputs.size();
+    // std::cout << "M: " << M << " K: " << K << " N: " << N << std::endl;
+    // std::cout << outputs.size() << std::endl;
     // Replicate inputs for each neuron
     float *a = new float[K * M];
     for (int i = 0; i < M; ++i) {
@@ -62,9 +102,15 @@ void LinearLayer::matMulCuda(const std::vector<float>& inputs, std::vector<float
     float *ab = new float[M];
 
     // Flatten weights matrix in the correct order
-    for (size_t i = 0; i < M; ++i) {
+    /*for (size_t i = 0; i < M; ++i) {
         for (size_t j = 0; j < K; ++j) {
             b[j * M + i] = weights[i][j];
+        }
+    }*/
+    // populate b with weights
+    for (int i = 0; i < M; ++i) {
+        for (int j = 0; j < K; ++j) {
+            b[j * M + i] = weights[i * K + j];
         }
     }
 
@@ -84,11 +130,11 @@ void LinearLayer::matMulCuda(const std::vector<float>& inputs, std::vector<float
     matMul(a, b, ab, M, K, N);
 
     // Debug prints for verification
-    std::cout << "Result ab:" << std::endl;
+    /*std::cout << "Result ab:" << std::endl;
     for (int i = 0; i < M; ++i) {
         std::cout << " " << ab[i];
     }
-    std::cout << std::endl;
+    std::cout << std::endl;*/
 
     // Assign the result to outputs
     outputs.assign(ab, ab + M);
@@ -98,45 +144,6 @@ void LinearLayer::matMulCuda(const std::vector<float>& inputs, std::vector<float
     delete[] b;
     delete[] ab;
 }
-
-
-
-void LinearLayer::backward(const std::vector<float>& nextLayerDeltas) {
-    for (size_t i = 0; i < deltas.size(); ++i) {
-        float delta = 0.0f;
-        for (size_t j = 0; j < nextLayerDeltas.size(); ++j) {
-            delta += nextLayerDeltas[j] * outputs[j];
-        }
-        deltas[i] = delta * activationFunctionDerivative(outputs[i]);
-    }
-}
-
-void LinearLayer::updateWeights(float learningRate) {
-    for (size_t i = 0; i < weights.size(); ++i) {
-        for (size_t j = 0; j < weights[i].size(); ++j) {
-            weights[i][j] += learningRate * deltas[i] * outputs[j];  // Update weight
-        }
-        biases[i] += learningRate * deltas[i];  // Update bias
-    }
-}
-
-std::vector<float> LinearLayer::getOutputs() const {
-    return outputs;
-}
-
-std::vector<float> LinearLayer::computeDeltas() const {
-    return deltas;
-}
-
-float LinearLayer::activationFunction(float x) {
-    return 1.0 / (1.0 + exp(-x)); // Sigmoid function
-}
-
-float LinearLayer::activationFunctionDerivative(float x) {
-    float fx = activationFunction(x);
-    return fx * (1 - fx); // Derivative of sigmoid
-}
-
 
 
 

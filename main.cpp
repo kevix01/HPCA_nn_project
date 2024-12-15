@@ -3,26 +3,38 @@
 //
 
 #include <iostream>
+#include <vector>
+
+#include "device_type.h"
 #include "neural_network.h"
 
+
 int main() {
-    DeviceType device = CUDA;  // or CPU
-
+    DeviceType device = CUDA;  // or CUDA
     NeuralNetwork nn(device);
-    nn.addInputLayer(3);         // Example input layer with 3 inputs
-    nn.addLayer(3, 2);           // First hidden layer with 3 inputs and 2 neurons
-    nn.addLayer(2, 1);           // Output layer with 2 inputs and 1 neuron
 
-    std::vector<std::vector<float>> inputs = {{0.5, 0.3, 0.2}, {0.6, 0.4, 0.1}};
-    std::vector<std::vector<float>> outputs = {{1.0}, {0.0}};
+    // Add layers
+    nn.addLayer(2, 4, ActivationFunction::ReLU); // Hidden layer with 8 neurons
+    nn.addLayer(4, 1, ActivationFunction::Sigmoid); // Output layer with 1 neuron
 
-    float learningRate = 0.01;
-    int epochs = 1;
-    int batchSize = 2;
+    // Training data (XOR problem)
+    std::vector<std::vector<float>> inputs = {
+        {0, 0},
+        {0, 1},
+        {1, 0},
+        {1, 1}
+    };
 
-    nn.train(inputs, outputs, learningRate, epochs, batchSize);
+    std::vector<int> labels = {0, 1, 1, 0};
 
-    std::cout << "Training complete!" << std::endl;
+    // Train the network
+    nn.train(inputs, labels, 0.1f, 650, 4); // Reduce learning rate and increase epochs
+
+    // Test the network
+    for (const auto& input : inputs) {
+        std::cout << "Input: " << input[0] << ", " << input[1] << " -> Predicted: " << nn.predict(input) << std::endl;
+    }
+
     return 0;
 }
 

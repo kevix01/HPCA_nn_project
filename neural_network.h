@@ -6,22 +6,41 @@
 #define NEURAL_NETWORK_H
 
 #include <vector>
-#include "linear_layer.h"
+#include <memory>
+
 #include "device_type.h"
+#include "linear_layer.h"
 
 class NeuralNetwork {
 public:
-    NeuralNetwork(DeviceType device);
-    void addInputLayer(int numInputs);
-    void addLayer(int numInputs, int numNeurons);
-    void train(const std::vector<std::vector<float>>& inputs, const std::vector<std::vector<float>>& outputs, float learningRate, int epochs, int batchSize);
+    explicit NeuralNetwork(DeviceType device);
+    ~NeuralNetwork() = default;
+
+    // Add a layer to the network
+    void addLayer(int inputSize, int outputSize, ActivationFunction activation);
+
+    // Train the network using mini-batches
+    void train(const std::vector<std::vector<float>>& inputs, const std::vector<int>& labels,
+               float learningRate, int epochs, int batchSize);
+
+    // Predict the output for a given input
+    int predict(const std::vector<float>& input);
+
 private:
-    std::vector<LinearLayer> layers;
     DeviceType device;
-    std::vector<float> inputData; // to store input data
-    void forward(const std::vector<std::vector<float>>& inputs, std::vector<std::vector<float>>& batchOutputs);
-    void backward(const std::vector<std::vector<float>>& targets, const std::vector<std::vector<float>>& outputs);
-    void updateWeights(float learningRate, int batchSize);
+    std::vector<std::unique_ptr<LinearLayer>> layers;
+
+    // Forward pass
+    std::vector<float> forward(const std::vector<float>& input);
+
+    // Backward pass
+    void backward(const std::vector<float>& output, int label, float learningRate);
+
+    // Compute loss
+    float computeLoss(const std::vector<float>& output, int label);
+
+    // Compute accuracy
+    float computeAccuracy(const std::vector<std::vector<float>>& inputs, const std::vector<int>& labels);
 };
 
 #endif // NEURAL_NETWORK_H
