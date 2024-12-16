@@ -19,10 +19,10 @@ public:
     ~LinearLayer() = default;
 
     // Forward pass
-    std::vector<float> forward(const std::vector<float>& input);
+    std::vector<std::vector<float>> forward(const std::vector<std::vector<float>>& input);
 
     // Backward pass
-    std::vector<float> backward(const std::vector<float>& grad, float learningRate);
+    std::vector<std::vector<float>> backward(const std::vector<std::vector<float>>& grad, float learningRate);
 
     void matMulCuda(const std::vector<float>& inputs, std::vector<float>& outputs);
 
@@ -32,8 +32,8 @@ private:
     ActivationFunction activation;
     std::vector<float> weights;
     std::vector<float> biases;
-    std::vector<float> inputCache;
-    std::vector<float> outputCache;
+    std::vector<std::vector<float>> inputCache;
+    std::vector<std::vector<float>> outputCache;
     DeviceType device;
 
     // Activation functions

@@ -24,20 +24,20 @@ public:
                float learningRate, int epochs, int batchSize);
 
     // Predict the output for a given input
-    int predict(const std::vector<float>& input);
+    std::vector<int> predict(const std::vector<std::vector<float>>& input);
 
 private:
     DeviceType device;
     std::vector<std::unique_ptr<LinearLayer>> layers;
 
     // Forward pass
-    std::vector<float> forward(const std::vector<float>& input);
+    std::vector<std::vector<float>> forward(const std::vector<std::vector<float>>& inputs);
 
     // Backward pass
-    void backward(const std::vector<float>& output, int label, float learningRate);
+    void backward(const std::vector<std::vector<float>>& output, const std::vector<int>& labels, float learningRate);
 
     // Compute loss
-    float computeLoss(const std::vector<float>& output, int label);
+    void computeLoss(const std::vector<std::vector<float>>& outputs, std::vector<int> labels, float& totalLoss);
 
     // Compute accuracy
     float computeAccuracy(const std::vector<std::vector<float>>& inputs, const std::vector<int>& labels);

@@ -27,32 +27,70 @@ LinearLayer::LinearLayer(int inputSize, int outputSize, ActivationFunction activ
 }
 
 
-std::vector<float> LinearLayer::forward(const std::vector<float>& input) {
-    inputCache = input;
-    std::vector<float> output(outputSize);
+std::vector<std::vector<float>> LinearLayer::forward(const std::vector<std::vector<float>>& inputs) {
+    inputCache = inputs;
+    std::vector<std::vector<float>> output(inputs.size(), std::vector<float>(outputSize));
     if (device == CPU){
-        for (int i = 0; i < outputSize; ++i) {
-            float sum = biases[i];
-            for (int j = 0; j < inputSize; ++j) {
-                sum += input[j] * weights[i * inputSize + j];
+        int sample_id = 0;
+        for (auto input : inputs) {
+            for (int i = 0; i < outputSize; ++i) {
+                float sum = biases[i];
+                for (int j = 0; j < inputSize; ++j) {
+                    sum += input[j] * weights[i * inputSize + j];
+                }
+                output[sample_id][i] = activate(sum);
             }
-            output[i] = activate(sum);
+            sample_id++;
         }
     } else if (device == CUDA) {
-        matMulCuda(input, output);
+        /*matMulCuda(input, output);
         for (size_t i = 0; i < output.size(); ++i) {
             output[i] += biases[i];
             output[i] = activate(output[i]);
-        }
+        }*/
     }
     outputCache = output;
     return output;
 }
 
-std::vector<float> LinearLayer::backward(const std::vector<float>& grad, float learningRate) {
-    std::vector<float> gradInput(inputSize, 0.0f);
-
+std::vector<std::vector<float>> LinearLayer::backward(const std::vector<std::vector<float>>& grad, float learningRate) {
+    std::vector<std::vector<float>> gradInput(grad.size(), std::vector<float>(inputSize, 0.0f));
+    // std::cout << "Next grad size: " << gradInput.size() << std::endl;
+    // std::cout << "Grad size: " << grad.size() << std::endl;
+    // std::cout << "Output cache size: " << outputCache.size() << std::endl;
+    // std::cout << "Output size: " << outputSize << std::endl;
     for (int i = 0; i < outputSize; ++i) {
+        std::vector<float> deltas(grad.size());
+        // Calculate deltas for each sample in the batch relative to one of the output neurons
+        for (int k = 0; k < grad.size(); ++k) {
+            deltas[k] = grad[k][i] * activateDerivative(outputCache[k][i]);
+        }
+
+        // Average the delta
+        float avg_delta = std::accumulate(deltas.begin(), deltas.end(), 0.0f) / deltas.size();
+        // std::cout << "Avg delta: " << avg_delta << std::endl;
+        // std::cout << "Output cache: " << outputCache[0][i] << std::endl;
+        // Update weights and accumulate gradInput
+        for (int j = 0; j < inputSize; ++j) {
+            float weight_step = 0.0f;
+            for (int k = 0; k < deltas.size(); ++k) {
+                weight_step += deltas[k] * inputCache[k][j];
+                gradInput[k][j] += deltas[k] * weights[i * inputSize + j];
+            }
+            weight_step /= deltas.size();
+            //std::cout << "Weight step: " << weight_step << std::endl;
+            weights[i * inputSize + j] -= learningRate * weight_step;
+        }
+
+        // Update biases
+        biases[i] -= learningRate * avg_delta;
+    }
+
+    return gradInput;
+}
+
+
+    /*for (int i = 0; i < outputSize; ++i) {
         float delta = grad[i] * activateDerivative(outputCache[i]);
 
         for (int j = 0; j < inputSize; ++j) {
@@ -63,8 +101,8 @@ std::vector<float> LinearLayer::backward(const std::vector<float>& grad, float l
         biases[i] -= learningRate * delta;
     }
 
-    return gradInput;
-}
+    return gradInput;*/
+//}
 
 float LinearLayer::activate(float x) {
     if (activation == ActivationFunction::Sigmoid) {

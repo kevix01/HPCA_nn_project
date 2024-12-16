@@ -10,7 +10,7 @@
 
 
 int main() {
-    DeviceType device = CUDA;  // or CUDA
+    DeviceType device = CPU;  // or CUDA
     NeuralNetwork nn(device);
 
     // Add layers
@@ -19,20 +19,24 @@ int main() {
 
     // Training data (XOR problem)
     std::vector<std::vector<float>> inputs = {
-        {0, 0},
+        {1, 1},
         {0, 1},
         {1, 0},
-        {1, 1}
+        {0, 0}
     };
 
     std::vector<int> labels = {0, 1, 1, 0};
 
     // Train the network
-    nn.train(inputs, labels, 0.1f, 650, 4); // Reduce learning rate and increase epochs
+    nn.train(inputs, labels, 0.1f, 950, 3); // Reduce learning rate and increase epochs
 
     // Test the network
-    for (const auto& input : inputs) {
+    /*for (const auto& input : inputs) {
         std::cout << "Input: " << input[0] << ", " << input[1] << " -> Predicted: " << nn.predict(input) << std::endl;
+    }*/
+    auto predictions = nn.predict(inputs);
+    for (size_t i = 0; i < predictions.size(); ++i) {
+        std::cout << "Input: " << inputs[i][0] << ", " << inputs[i][1] << " -> Predicted: " << predictions[i] << std::endl;
     }
 
     return 0;
