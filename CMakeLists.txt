@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.30)
+cmake_minimum_required(VERSION 3.28)
 
 # Set CUDA compiler and architecture
 set(CMAKE_CUDA_ARCHITECTURES 75)
@@ -21,6 +21,11 @@ add_executable(hpca_nn
         device_type.h
         cuda_matmul.h
         cuda_matmul.cu
+        parallel_impl_cpu.h
+        parameters.h
+        parameters.cpp
+        dataset_loader.h
+        dataset_loader.cpp
 )
 
 # Set target properties
@@ -31,6 +36,13 @@ set_target_properties(hpca_nn PROPERTIES
 
 # Link CUDA libraries (if needed)
 target_link_libraries(hpca_nn ${CUDA_LIBRARIES})
+
+
+find_package(OpenMP REQUIRED)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(hpca_nn PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
 
 #########################################################
 # FOR ONLY C++ PROJECT comment before and uncomment after

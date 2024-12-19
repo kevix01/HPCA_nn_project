@@ -32,15 +32,16 @@ __global__ void matMulKernel(float *a, float *b, float *ab, int M, int K, int N)
     if (row < M && col < N) {
         ab[row * N + col] = result;
         // Debug print to log the result
-        // printf("CUDA - Kernel result at row %d, col %d: %f\n", row, col, result);
+        printf("CUDA - Kernel result at row %d, col %d: %f\n", row, col, result);
     }
 }
 
 void matMul(float *a, float *b, float *ab, int M, int K, int N) {
     float *d_a, *d_b, *d_ab;
     size_t sizeA = M * K * sizeof(float);
-    size_t sizeB = K * N * sizeof(float);
-    size_t sizeAB = M * 1 * sizeof(float);
+    size_t sizeB = K * M * sizeof(float);
+    size_t sizeAB = M * N * sizeof(float);
+    std::cout << "sizeA: " << M*K << " sizeB: " << K*M << " sizeAB: " << M*N << std::endl;
 
     cudaMalloc(&d_a, sizeA);
     cudaMalloc(&d_b, sizeB);
@@ -52,7 +53,7 @@ void matMul(float *a, float *b, float *ab, int M, int K, int N) {
     dim3 dimBlock(TILE_WIDTH, TILE_WIDTH);
     dim3 dimGrid((N + TILE_WIDTH - 1) / TILE_WIDTH, (M + TILE_WIDTH - 1) / TILE_WIDTH);
 
-    matMulKernel<<<dimGrid, dimBlock>>>(d_a, d_b, d_ab, M, K, N);
+    matMulKernel<<<dimGrid, dimBlock>>>(d_a, d_b, d_ab, M, K, M*N);
 
     cudaMemcpy(ab, d_ab, sizeAB, cudaMemcpyDeviceToHost);
 
@@ -61,6 +62,7 @@ void matMul(float *a, float *b, float *ab, int M, int K, int N) {
     cudaFree(d_ab);
     // std::cout << "CUDA - Kernel result at row 0, col 0: " << ab[0] << std::endl;
 }
+
 
 
 

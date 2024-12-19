@@ -5,42 +5,73 @@
 #include <iostream>
 #include <vector>
 
+#include "dataset_loader.h"
 #include "device_type.h"
 #include "neural_network.h"
+#include "parameters.h"
+
+int main(int argc, char* argv[]) {
+    Parameters params(argc, argv);
+    int num_threads = params.getNumThreads();
+    ParallelImplCpu parallelImplCpu = params.getParallelImplCpu();
+    // std::cout << num_threads << std::endl;
 
 
-int main() {
     DeviceType device = CPU;  // or CUDA
     NeuralNetwork nn(device);
 
+    if (parallelImplCpu != No) {
+        nn.setForwardOutNeuronsNumThreads(params.getOutNeuronsNumThreads());
+        nn.setForwardInNeuronsNumThreads(params.getInNeuronsNumThreads());
+    }
+
     // Add layers
-    nn.addLayer(2, 4, ActivationFunction::ReLU); // Hidden layer with 8 neurons
+    nn.addLayer(6824, 4, ActivationFunction::ReLU); // Hidden layer with 4 neurons
     nn.addLayer(4, 1, ActivationFunction::Sigmoid); // Output layer with 1 neuron
 
+    // Define the label mapping
+    std::unordered_map<std::string, int> label_map = {{"B", 0}, {"M", 1}};
+    DatasetLoader loader("../dataset/REJAFADA.data", "", ',', true, true, label_map);
+    loader.load();
+    loader.normalizeFeatures();
+    std::cout << "Features: " << loader.getFeatures()[0].size() << std::endl;
+    std::cout << "Labels: " << loader.getLabels().size() << std::endl;
+    // Print all the features
+    /*for (auto feature : loader.getFeatures()) {
+        for (auto elem : feature) {
+            std::cout << elem << " ";
+        }
+        std::cout << std::endl;
+    }*/
+    // Print all the labels
+    /*for (auto label : loader.getLabels()) {
+        std::cout << label << " ";
+    }*/
+
     // Training data (XOR problem)
-    std::vector<std::vector<float>> inputs = {
-        {1, 1},
+    std::vector<std::vector<float>> inputs = loader.getFeatures();
+    /*inputs = {
+        {0, 0},
         {0, 1},
         {1, 0},
-        {0, 0}
-    };
+        {1, 1}
+    };*/
 
-    std::vector<int> labels = {0, 1, 1, 0};
+    std::vector<int> labels = loader.getLabels();
+    /*labels = {0, 1, 1, 0};*/
 
     // Train the network
-    nn.train(inputs, labels, 0.1f, 950, 3); // Reduce learning rate and increase epochs
+    nn.train(inputs, labels, 0.1f, 350, 100, parallelImplCpu, num_threads);
 
     // Test the network
-    /*for (const auto& input : inputs) {
-        std::cout << "Input: " << input[0] << ", " << input[1] << " -> Predicted: " << nn.predict(input) << std::endl;
-    }*/
-    auto predictions = nn.predict(inputs);
+    auto predictions = nn.predict(inputs, num_threads, parallelImplCpu);
     for (size_t i = 0; i < predictions.size(); ++i) {
         std::cout << "Input: " << inputs[i][0] << ", " << inputs[i][1] << " -> Predicted: " << predictions[i] << std::endl;
     }
 
     return 0;
 }
+
 
 
 

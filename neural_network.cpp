@@ -7,7 +7,7 @@
 #include <iostream>
 #include <algorithm>
 
-NeuralNetwork::NeuralNetwork(DeviceType device) {
+NeuralNetwork::NeuralNetwork(DeviceType device): forward_in_neurons_num_threads(NULL), forward_out_neurons_num_threads(NULL) {
     this->device = device;
 }
 
@@ -16,7 +16,7 @@ void NeuralNetwork::addLayer(int inputSize, int outputSize, ActivationFunction a
 }
 
 void NeuralNetwork::train(const std::vector<std::vector<float>>& inputs, const std::vector<int>& labels,
-                          float learningRate, int epochs, int batchSize) {
+                          float learningRate, int epochs, int batchSize, ParallelImplCpu parallelImplCpu, int num_threads) {
     for (int epoch = 0; epoch < epochs; ++epoch) {
         float totalLoss = 0.0f;
         int correct = 0;
@@ -26,7 +26,7 @@ void NeuralNetwork::train(const std::vector<std::vector<float>>& inputs, const s
             auto inputsBatch = std::vector<std::vector<float>>(inputs.begin() + i, inputs.begin() + i + currentBatchSize);
             auto labelsBatch = std::vector<int>(labels.begin() + i, labels.begin() + i + currentBatchSize);
 
-            auto output = forward(inputsBatch);
+            auto output = forward(inputsBatch, num_threads, parallelImplCpu);
             computeLoss(output, labelsBatch, totalLoss);
 
             for (int j = 0; j < currentBatchSize; ++j) {
@@ -54,28 +54,47 @@ void NeuralNetwork::train(const std::vector<std::vector<float>>& inputs, const s
     }
 }
 
-std::vector<int> NeuralNetwork::predict(const std::vector<std::vector<float>>& input) {
-    auto output = forward(input);
+std::vector<int> NeuralNetwork::predict(const std::vector<std::vector<float>>& input, int num_threads, ParallelImplCpu parallelImplCpu) {
+    auto output = forward(input, num_threads, parallelImplCpu);
     std::vector<int> predictions;
     for (auto& out : output) {
+        // std::cout << "Output: " << out[0] << std::endl;
         predictions.push_back(out[0] >= 0.5f ? 1 : 0);
     }
     return predictions;
 }
 
-std::vector<std::vector<float>> NeuralNetwork::forward(const std::vector<std::vector<float>>& inputs) {
+std::vector<std::vector<float>> NeuralNetwork::forward(const std::vector<std::vector<float>>& inputs, int num_threads, ParallelImplCpu parallelImplCpu) {
     std::vector<std::vector<float>> activations = inputs;
-    for (auto& layer : layers) {
-        activations = layer->forward(activations);
+    if (device == CPU) {
+        if (parallelImplCpu == No){
+            //std::cout << "No parallelism" << std::endl;
+            for (auto& layer : layers) {
+                activations = layer->forwardCPU(activations);
+            }
+        }
+        else if (parallelImplCpu == OpenMP) {
+            //std::cout << "OpenMP parallelism" << std::endl;
+            for (auto& layer : layers) {
+                activations = layer->forwardCPUopenMP(activations, num_threads, forward_out_neurons_num_threads, forward_in_neurons_num_threads);
+            }
+        } else if (parallelImplCpu == processes) {
+            for (auto& layer : layers) {
+               // activations = layer->forwardCPUprocesses(activations, num_processes, 40, 40);
+            }
+        }
+        return activations;
+    } else if (device == CUDA) {
+        for (auto& layer : layers) {
+            activations = layer->forwardCUDA(activations);
+        }
     }
     return activations;
 }
 
 
 void NeuralNetwork::backward(const std::vector<std::vector<float>>& output, const std::vector<int>& labels, float learningRate) {
-    // std::vector<float> grad = {output[0] - static_cast<float>(label)}; // Binary cross-entropy derivative
     std::vector<std::vector<float>> grad = {};
-    // std::cout << "Output size: " << output.size() << std::endl;
     for (size_t i = 0; i < output.size(); ++i) {
         grad.push_back({output[i][0] - static_cast<float>(labels[i])});
     }
@@ -123,13 +142,13 @@ void NeuralNetwork::computeLoss(const std::vector<std::vector<float>>& output, s
     // return loss;
 }
 
-float NeuralNetwork::computeAccuracy(const std::vector<std::vector<float>>& inputs, const std::vector<int>& labels) {
-    /*int correct = 0;
+/*float NeuralNetwork::computeAccuracy(const std::vector<std::vector<float>>& inputs, const std::vector<int>& labels) {
+    int correct = 0;
     for (size_t i = 0; i < inputs.size(); ++i) {
         correct += (predict(inputs[i]) == labels[i]);
     }
-    return static_cast<float>(correct) / inputs.size();*/
-}
+    return static_cast<float>(correct) / inputs.size();
+}*/
 
 
 
