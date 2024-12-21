@@ -12,7 +12,7 @@
 
 int main(int argc, char* argv[]) {
     Parameters params(argc, argv);
-    int num_threads = params.getNumThreads();
+    // int num_threads = params.getFSamplesNumThreads();
     ParallelImplCpu parallelImplCpu = params.getParallelImplCpu();
     // std::cout << num_threads << std::endl;
 
@@ -21,8 +21,9 @@ int main(int argc, char* argv[]) {
     NeuralNetwork nn(device);
 
     if (parallelImplCpu != No) {
-        nn.setForwardOutNeuronsNumThreads(params.getOutNeuronsNumThreads());
-        nn.setForwardInNeuronsNumThreads(params.getInNeuronsNumThreads());
+        nn.setForwardSamplesNumThreads(params.getFSamplesNumThreads());
+        nn.setForwardOutNeuronsNumThreads(params.getFOutNeuronsNumThreads());
+        nn.setForwardInNeuronsNumThreads(params.getFInNeuronsNumThreads());
     }
 
     // Add layers
@@ -61,10 +62,10 @@ int main(int argc, char* argv[]) {
     /*labels = {0, 1, 1, 0};*/
 
     // Train the network
-    nn.train(inputs, labels, 0.1f, 350, 100, parallelImplCpu, num_threads);
+    nn.train(inputs, labels, 0.1f, 350, 100, parallelImplCpu);
 
     // Test the network
-    auto predictions = nn.predict(inputs, num_threads, parallelImplCpu);
+    auto predictions = nn.predict(inputs, parallelImplCpu);
     for (size_t i = 0; i < predictions.size(); ++i) {
         std::cout << "Input: " << inputs[i][0] << ", " << inputs[i][1] << " -> Predicted: " << predictions[i] << std::endl;
     }

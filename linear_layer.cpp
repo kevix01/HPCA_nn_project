@@ -112,9 +112,6 @@ std::vector<std::vector<float>> LinearLayer::forwardCPUopenMP(const std::vector<
     inputCache = inputs;
     std::vector<std::vector<float>> output(inputs.size(), std::vector<float>(outputSize));
 
-    // Enable nested parallelism
-    omp_set_nested(1);
-
     // Set the number of threads for the outermost parallel region
     // omp_set_num_threads(samples_num_threads);
 
@@ -199,6 +196,47 @@ std::vector<std::vector<float>> LinearLayer::forwardCPUopenMP(const std::vector<
     outputCache = output;
     return output;
 }*/
+
+
+std::vector<std::vector<float>> LinearLayer::backwardCPUopenMP(const std::vector<std::vector<float>>& grad, float learningRate) {
+    std::vector<std::vector<float>> gradInput(grad.size(), std::vector<float>(inputSize, 0.0f));
+
+    #pragma omp parallel for num_threads(omp_get_max_threads()) // Parallelize the outer loop
+    for (int i = 0; i < outputSize; ++i) {
+        std::vector<float> deltas(grad.size());
+
+        // Parallelize the deltas calculation loop
+        #pragma omp parallel for num_threads(omp_get_max_threads())
+        for (int k = 0; k < grad.size(); ++k) {
+            deltas[k] = grad[k][i] * activateDerivative(outputCache[k][i]);
+        }
+
+        // Average the delta
+        float avg_delta = std::accumulate(deltas.begin(), deltas.end(), 0.0f) / deltas.size();
+
+        // Update weights and accumulate gradInput
+        #pragma omp parallel for // Parallelize the weight update loop
+        for (int j = 0; j < inputSize; ++j) {
+            float weight_step = 0.0f; // Reset weight_step to zero at each iteration
+            // #pragma omp parallel for reduction(+:weight_step) num_threads(1)
+            for (int k = 0; k < deltas.size(); ++k) {
+                weight_step += deltas[k] * inputCache[k][j];
+                #pragma omp atomic
+                gradInput[k][j] += deltas[k] * weights[i * inputSize + j];
+            }
+            weight_step /= deltas.size();
+            // #pragma omp atomic
+            weights[i * inputSize + j] -= learningRate * weight_step;
+        }
+
+        // Update biases
+        // #pragma omp atomic
+        biases[i] -= learningRate * avg_delta;
+    }
+
+    return gradInput;
+}
+
 
 
 

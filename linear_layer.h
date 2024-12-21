@@ -26,6 +26,7 @@ public:
 
     // Backward pass
     std::vector<std::vector<float>> backward(const std::vector<std::vector<float>>& grad, float learningRate);
+    std::vector<std::vector<float>> backwardCPUopenMP(const std::vector<std::vector<float>>& grad, float learningRate);
 
     void matMulCuda(const std::vector<std::vector<float>>& inputs, std::vector<std::vector<float>>& outputs);
 

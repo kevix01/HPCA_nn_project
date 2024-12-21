@@ -6,6 +6,7 @@
 #include <cmath>
 #include <iostream>
 #include <algorithm>
+#include <omp.h>
 
 NeuralNetwork::NeuralNetwork(DeviceType device): forward_in_neurons_num_threads(NULL), forward_out_neurons_num_threads(NULL) {
     this->device = device;
@@ -16,7 +17,11 @@ void NeuralNetwork::addLayer(int inputSize, int outputSize, ActivationFunction a
 }
 
 void NeuralNetwork::train(const std::vector<std::vector<float>>& inputs, const std::vector<int>& labels,
-                          float learningRate, int epochs, int batchSize, ParallelImplCpu parallelImplCpu, int num_threads) {
+                          float learningRate, int epochs, int batchSize, ParallelImplCpu parallelImplCpu) {
+    if (device == CPU && parallelImplCpu == OpenMP) {
+        // Enable nested parallelism globally
+        omp_set_nested(1);
+    }
     for (int epoch = 0; epoch < epochs; ++epoch) {
         float totalLoss = 0.0f;
         int correct = 0;
@@ -26,7 +31,7 @@ void NeuralNetwork::train(const std::vector<std::vector<float>>& inputs, const s
             auto inputsBatch = std::vector<std::vector<float>>(inputs.begin() + i, inputs.begin() + i + currentBatchSize);
             auto labelsBatch = std::vector<int>(labels.begin() + i, labels.begin() + i + currentBatchSize);
 
-            auto output = forward(inputsBatch, num_threads, parallelImplCpu);
+            auto output = forward(inputsBatch, parallelImplCpu);
             computeLoss(output, labelsBatch, totalLoss);
 
             for (int j = 0; j < currentBatchSize; ++j) {
@@ -34,7 +39,7 @@ void NeuralNetwork::train(const std::vector<std::vector<float>>& inputs, const s
                 // std::cout << "Output: " << output[j][0] << std::endl;
             }
 
-            backward(output, labelsBatch, learningRate);
+            backward(output, labelsBatch, learningRate, parallelImplCpu);
 
             /*for (int j = 0; j < currentBatchSize; ++j) {
                 auto input = inputs[i + j];
@@ -54,8 +59,12 @@ void NeuralNetwork::train(const std::vector<std::vector<float>>& inputs, const s
     }
 }
 
-std::vector<int> NeuralNetwork::predict(const std::vector<std::vector<float>>& input, int num_threads, ParallelImplCpu parallelImplCpu) {
-    auto output = forward(input, num_threads, parallelImplCpu);
+std::vector<int> NeuralNetwork::predict(const std::vector<std::vector<float>>& input, ParallelImplCpu parallelImplCpu) {
+    if (device == CPU && parallelImplCpu == OpenMP) {
+        // Enable nested parallelism globally
+        omp_set_nested(1);
+    }
+    auto output = forward(input, parallelImplCpu);
     std::vector<int> predictions;
     for (auto& out : output) {
         // std::cout << "Output: " << out[0] << std::endl;
@@ -64,7 +73,7 @@ std::vector<int> NeuralNetwork::predict(const std::vector<std::vector<float>>& i
     return predictions;
 }
 
-std::vector<std::vector<float>> NeuralNetwork::forward(const std::vector<std::vector<float>>& inputs, int num_threads, ParallelImplCpu parallelImplCpu) {
+std::vector<std::vector<float>> NeuralNetwork::forward(const std::vector<std::vector<float>>& inputs, ParallelImplCpu parallelImplCpu) {
     std::vector<std::vector<float>> activations = inputs;
     if (device == CPU) {
         if (parallelImplCpu == No){
@@ -76,7 +85,7 @@ std::vector<std::vector<float>> NeuralNetwork::forward(const std::vector<std::ve
         else if (parallelImplCpu == OpenMP) {
             //std::cout << "OpenMP parallelism" << std::endl;
             for (auto& layer : layers) {
-                activations = layer->forwardCPUopenMP(activations, num_threads, forward_out_neurons_num_threads, forward_in_neurons_num_threads);
+                activations = layer->forwardCPUopenMP(activations, forward_samples_num_threads, forward_out_neurons_num_threads, forward_in_neurons_num_threads);
             }
         } else if (parallelImplCpu == processes) {
             for (auto& layer : layers) {
@@ -93,7 +102,7 @@ std::vector<std::vector<float>> NeuralNetwork::forward(const std::vector<std::ve
 }
 
 
-void NeuralNetwork::backward(const std::vector<std::vector<float>>& output, const std::vector<int>& labels, float learningRate) {
+void NeuralNetwork::backward(const std::vector<std::vector<float>>& output, const std::vector<int>& labels, float learningRate, ParallelImplCpu parallelImplCpu) {
     std::vector<std::vector<float>> grad = {};
     for (size_t i = 0; i < output.size(); ++i) {
         grad.push_back({output[i][0] - static_cast<float>(labels[i])});
@@ -118,15 +127,31 @@ void NeuralNetwork::backward(const std::vector<std::vector<float>>& output, cons
     }*/
     // Iterate through the layers in reverse order
     // The returned gradient is the gradient of the loss with respect to the input of the layer
-    for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
-        grad = (*it)->backward(grad, learningRate);
-        //std::cout << "New elements in grad: " ;
-        /*for (auto grad_elem : grad) {
-            for (auto elem : grad_elem) {
-                std::cout << elem << " ";
+    if (device == CPU) {
+        if (parallelImplCpu == No) {
+            for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
+                grad = (*it)->backward(grad, learningRate);
+                //std::cout << "New elements in grad: " ;
+                /*for (auto grad_elem : grad) {
+                    for (auto elem : grad_elem) {
+                        std::cout << elem << " ";
+                    }
+                }
+                std::cout << std::endl;*/
             }
         }
-        std::cout << std::endl;*/
+        else if (parallelImplCpu == OpenMP) {
+            for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
+                grad = (*it)->backwardCPUopenMP(grad, learningRate);
+                //std::cout << "New elements in grad: " ;
+                /*for (auto grad_elem : grad) {
+                    for (auto elem : grad_elem) {
+                        std::cout << elem << " ";
+                    }
+                }
+                std::cout << std::endl;*/
+            }
+        }
     }
 }
 

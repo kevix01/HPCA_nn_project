@@ -11,16 +11,24 @@
 class Parameters {
 public:
     Parameters(int argc, char* argv[]);
-    int getNumThreads() const;
+    // int getNumThreads() const;
     ParallelImplCpu getParallelImplCpu() const;
-    int getOutNeuronsNumThreads() const;
-    int getInNeuronsNumThreads() const;
+    int getFOutNeuronsNumThreads() const;
+    int getFInNeuronsNumThreads() const;
+    int getFSamplesNumThreads() const;
+    int getBOutNeuronsNumThreads() const;
+    int getBDeltasNumThreads() const;
+    int getBInNeuronsNumThreads() const;
 
 private:
-    int num_threads;
-    ParallelImplCpu parallel_impl_cpu;
-    int out_neurons_num_threads;
-    int in_neurons_num_threads;
+    // int num_threads;
+    ParallelImplCpu parallel_impl_cpu = No;
+    int f_samples_num_threads = 1;
+    int f_out_neurons_num_threads = 1;
+    int f_in_neurons_num_threads = 1;
+    int b_out_neurons_num_threads = 1;
+    int b_deltas_num_threads = 1;
+    int b_in_neurons_num_threads = 1;
 
     void parseArguments(int argc, char* argv[]);
 };
