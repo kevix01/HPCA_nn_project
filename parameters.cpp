@@ -19,6 +19,18 @@ int Parameters::getFSamplesNumThreads() const {
     return f_samples_num_threads;
 }
 
+int Parameters::getBInNeuronsNumThreads() const {
+    return b_in_neurons_num_threads;
+}
+
+int Parameters::getBDeltasNumThreads() const {
+    return b_deltas_num_threads;
+}
+
+int Parameters::getBOutNeuronsNumThreads() const {
+    return b_out_neurons_num_threads;
+}
+
 int Parameters::getFInNeuronsNumThreads() const {
     return f_in_neurons_num_threads;
 }
@@ -38,11 +50,11 @@ void Parameters::parseArguments(int argc, char* argv[]) {
                 parallel_impl_cpu = OpenMP;
             }
         } else if (arg.find("--f_out_neurons_num_threads=") == 0) {
-            f_out_neurons_num_threads = std::atoi(arg.substr(26).c_str());
+            f_out_neurons_num_threads = std::atoi(arg.substr(28).c_str());
         } else if (arg.find("--f_in_neurons_num_threads=") == 0) {
-            f_in_neurons_num_threads = std::atoi(arg.substr(25).c_str());
+            f_in_neurons_num_threads = std::atoi(arg.substr(27).c_str());
         } else if (arg.find("--b_out_neurons_num_threads=") == 0) {
-            b_out_neurons_num_threads = std::atoi(arg.substr(26).c_str());
+            b_out_neurons_num_threads = std::atoi(arg.substr(28).c_str());
         } else if (arg.find("--b_deltas_num_threads=") == 0) {
             b_deltas_num_threads = std::atoi(arg.substr(23).c_str());
         } else if (arg.find("--b_in_neurons_num_threads=") == 0) {

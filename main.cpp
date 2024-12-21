@@ -24,7 +24,17 @@ int main(int argc, char* argv[]) {
         nn.setForwardSamplesNumThreads(params.getFSamplesNumThreads());
         nn.setForwardOutNeuronsNumThreads(params.getFOutNeuronsNumThreads());
         nn.setForwardInNeuronsNumThreads(params.getFInNeuronsNumThreads());
+        nn.setBackwardOutNeuronsNumThreads(params.getBOutNeuronsNumThreads());
+        nn.setBackwardDeltasNumThreads(params.getBDeltasNumThreads());
+        nn.setBackwardInNeuronsNumThreads(params.getBInNeuronsNumThreads());
     }
+    std::cout << params.getFSamplesNumThreads() << std::endl;
+    std::cout << params.getFOutNeuronsNumThreads() << std::endl;
+    std::cout << params.getFInNeuronsNumThreads() << std::endl;
+    std::cout << params.getBOutNeuronsNumThreads() << std::endl;
+    std::cout << params.getBDeltasNumThreads() << std::endl;
+    std::cout << params.getBInNeuronsNumThreads() << std::endl;
+
 
     // Add layers
     nn.addLayer(6824, 4, ActivationFunction::ReLU); // Hidden layer with 4 neurons

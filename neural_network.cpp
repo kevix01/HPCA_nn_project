@@ -142,7 +142,7 @@ void NeuralNetwork::backward(const std::vector<std::vector<float>>& output, cons
         }
         else if (parallelImplCpu == OpenMP) {
             for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
-                grad = (*it)->backwardCPUopenMP(grad, learningRate);
+                grad = (*it)->backwardCPUopenMP(grad, learningRate, backward_out_neurons_num_threads, backward_deltas_num_threads, backward_in_neurons_num_threads);
                 //std::cout << "New elements in grad: " ;
                 /*for (auto grad_elem : grad) {
                     for (auto elem : grad_elem) {

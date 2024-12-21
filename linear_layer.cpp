@@ -108,12 +108,16 @@ std::vector<std::vector<float>> LinearLayer::forwardCPU(const std::vector<std::v
     return output;
 }*/
 
-std::vector<std::vector<float>> LinearLayer::forwardCPUopenMP(const std::vector<std::vector<float>>& inputs, int samples_num_threads, int out_neurons_num_threads, int in_neurons_num_threads) {
+std::vector<std::vector<float>> LinearLayer::forwardCPUopenMP(const std::vector<std::vector<float>>& inputs, int f_samples_num_threads, int f_out_neurons_num_threads, int f_in_neurons_num_threads) {
     inputCache = inputs;
     std::vector<std::vector<float>> output(inputs.size(), std::vector<float>(outputSize));
 
     // Set the number of threads for the outermost parallel region
     // omp_set_num_threads(samples_num_threads);
+
+    int samples_num_threads = std::min(static_cast<int>(inputs.size()), f_samples_num_threads);
+    int out_neurons_num_threads = std::min(outputSize, f_out_neurons_num_threads);
+    int in_neurons_num_threads = std::min(inputSize, f_in_neurons_num_threads);
 
     #pragma omp parallel for num_threads(samples_num_threads)
     for (int sample_id = 0; sample_id < inputs.size(); ++sample_id) {
@@ -198,16 +202,29 @@ std::vector<std::vector<float>> LinearLayer::forwardCPUopenMP(const std::vector<
 }*/
 
 
-std::vector<std::vector<float>> LinearLayer::backwardCPUopenMP(const std::vector<std::vector<float>>& grad, float learningRate) {
+std::vector<std::vector<float>> LinearLayer::backwardCPUopenMP(const std::vector<std::vector<float>>& grad, float learningRate, int b_out_neurons_num_threads, int b_deltas_num_threads, int b_in_neurons_num_threads) {
     std::vector<std::vector<float>> gradInput(grad.size(), std::vector<float>(inputSize, 0.0f));
 
-    #pragma omp parallel for num_threads(omp_get_max_threads()) // Parallelize the outer loop
+    // Determine the number of threads to use to avoid overheading
+    int out_neurons_num_threads = std::min(outputSize, b_out_neurons_num_threads);
+    int deltas_num_threads = std::min(static_cast<int>(grad.size()), b_deltas_num_threads);
+    int in_neurons_num_threads = std::min(inputSize, b_in_neurons_num_threads);
+
+    #pragma omp parallel for num_threads(out_neurons_num_threads) // Parallelize the outer loop
     for (int i = 0; i < outputSize; ++i) {
+        /*if (omp_get_thread_num() == 0) { // Print only once per middle iteration
+            #pragma omp critical
+            std::cout << "Total number of threads for outer loop: " << omp_get_num_threads() << std::endl;
+        }*/
         std::vector<float> deltas(grad.size());
 
         // Parallelize the deltas calculation loop
-        #pragma omp parallel for num_threads(omp_get_max_threads())
+        #pragma omp parallel for num_threads(deltas_num_threads)
         for (int k = 0; k < grad.size(); ++k) {
+            /*if (omp_get_thread_num() == 0) { // Print only once per middle iteration
+                #pragma omp critical
+                std::cout << "Total number of threads for deltas loop: " << omp_get_num_threads() << std::endl;
+            }*/
             deltas[k] = grad[k][i] * activateDerivative(outputCache[k][i]);
         }
 
@@ -215,11 +232,19 @@ std::vector<std::vector<float>> LinearLayer::backwardCPUopenMP(const std::vector
         float avg_delta = std::accumulate(deltas.begin(), deltas.end(), 0.0f) / deltas.size();
 
         // Update weights and accumulate gradInput
-        #pragma omp parallel for // Parallelize the weight update loop
+        #pragma omp parallel for num_threads(in_neurons_num_threads)
         for (int j = 0; j < inputSize; ++j) {
+            /*if (omp_get_thread_num() == 0) { // Print only once per middle iteration
+                #pragma omp critical
+                std::cout << "Total number of threads for inner loop: " << omp_get_num_threads() << std::endl;
+            }*/
             float weight_step = 0.0f; // Reset weight_step to zero at each iteration
-            // #pragma omp parallel for reduction(+:weight_step) num_threads(1)
+            #pragma omp parallel for reduction(+:weight_step) num_threads(deltas_num_threads)
             for (int k = 0; k < deltas.size(); ++k) {
+                /*if (omp_get_thread_num() == 0) { // Print only once per middle iteration
+                    #pragma omp critical
+                    std::cout << "Total number of threads for inner loop: " << omp_get_num_threads() << std::endl;
+                }*/
                 weight_step += deltas[k] * inputCache[k][j];
                 #pragma omp atomic
                 gradInput[k][j] += deltas[k] * weights[i * inputSize + j];

@@ -42,11 +42,26 @@ public:
         this->forward_samples_num_threads = forward_samples_num_threads;
     }
 
+    void setBackwardOutNeuronsNumThreads(int backward_out_neurons_num_threads) {
+        this->backward_out_neurons_num_threads = backward_out_neurons_num_threads;
+    }
+
+    void setBackwardDeltasNumThreads(int backward_deltas_num_threads) {
+        this->backward_deltas_num_threads = backward_deltas_num_threads;
+    }
+
+    void setBackwardInNeuronsNumThreads(int backward_in_neurons_num_threads) {
+        this->backward_in_neurons_num_threads = backward_in_neurons_num_threads;
+    }
+
 private:
     DeviceType device;
     int forward_samples_num_threads;
     int forward_out_neurons_num_threads;
     int forward_in_neurons_num_threads;
+    int backward_out_neurons_num_threads;
+    int backward_deltas_num_threads;
+    int backward_in_neurons_num_threads;
     std::vector<std::unique_ptr<LinearLayer>> layers;
 
     // Forward pass
