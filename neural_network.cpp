@@ -13,7 +13,7 @@ NeuralNetwork::NeuralNetwork(DeviceType device): forward_in_neurons_num_threads(
 }
 
 void NeuralNetwork::addLayer(int inputSize, int outputSize, ActivationFunction activation) {
-    layers.push_back(std::make_unique<LinearLayer>(inputSize, outputSize, activation, device));
+    layers.push_back(std::make_unique<LinearLayer>(inputSize, outputSize, activation));
 }
 
 void NeuralNetwork::train(const std::vector<std::vector<float>>& inputs, const std::vector<int>& labels,
@@ -39,7 +39,7 @@ void NeuralNetwork::train(const std::vector<std::vector<float>>& inputs, const s
                 // std::cout << "Output: " << output[j][0] << std::endl;
             }
 
-            backward(output, labelsBatch, learningRate, parallelImplCpu);
+            //backward(output, labelsBatch, learningRate, parallelImplCpu);
 
             /*for (int j = 0; j < currentBatchSize; ++j) {
                 auto input = inputs[i + j];

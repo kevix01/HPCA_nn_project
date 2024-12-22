@@ -33,6 +33,12 @@ LinearLayer::LinearLayer(int inputSize, int outputSize, ActivationFunction activ
 std::vector<std::vector<float>> LinearLayer::forwardCUDA(const std::vector<std::vector<float>>& inputs) {
     inputCache = inputs;
     std::vector<std::vector<float>> output(inputs.size(), std::vector<float>(outputSize));
+    /*for (int i = 0; i < outputSize; ++i) {
+        for (int j = 0; j < inputSize; ++j) {
+            std::cout << weights[i * inputSize + j] << " ";
+        }
+        std::cout << std::endl;
+    }*/
     matMulCuda(inputs, output);
     for (size_t i = 0; i < output.size(); ++i) {
         for (size_t j = 0; j < output[i].size(); ++j) {
@@ -47,16 +53,26 @@ std::vector<std::vector<float>> LinearLayer::forwardCUDA(const std::vector<std::
 std::vector<std::vector<float>> LinearLayer::forwardCPU(const std::vector<std::vector<float>>& inputs) {
     inputCache = inputs;
     std::vector<std::vector<float>> output(inputs.size(), std::vector<float>(outputSize));
+    // print weights
+    /*for (int i = 0; i < outputSize; ++i) {
+        for (int j = 0; j < inputSize; ++j) {
+            std::cout << weights[i * inputSize + j] << " ";
+        }
+        std::cout << std::endl;
+    }*/
     int sample_id = 0;
     for (auto input : inputs) {
         for (int i = 0; i < outputSize; ++i) {
             float sum = biases[i];
             for (int j = 0; j < inputSize; ++j) {
                 sum += input[j] * weights[i * inputSize + j];
+                // std::cout << "sum: " << sum << "+=" << input[j] << "*" << weights[i * inputSize + j] << std::endl;
             }
+            // std::cout << sum << " ";
             output[sample_id][i] = activate(sum);
         }
         sample_id++;
+        // std::cout << std::endl;
     }
     outputCache = output;
     return output;
@@ -319,87 +335,59 @@ float LinearLayer::activateDerivative(float x) {
 void LinearLayer::matMulCuda(const std::vector<std::vector<float>>& inputs, std::vector<std::vector<float>>& outputs) {
     int M = outputs[0].size(); // Number of neurons
     int K = inputs[0].size(); // Number of input features
-    // int N = outputs.size();
-    int num_samples = inputs.size(); // Number of samples in the mini-batch
-    // int output_neurons = outputs[0].size(); // Number of output neurons
-    std::cout << "M: " << M << " K: " << K << " num_samples: " << num_samples << std::endl;
+    int N = outputs.size();
 
-    // Replicate inputs for each neuron
-    float *a = new float[K * M * num_samples];
-    std::cout << (K*M*num_samples) << std::endl;
-    std::cout << "Replicated input a:" << std::endl;
+    // Flatten input and weight matrices
+    float *a = new float[N * K];
+    float *b = new float[K * M];
+    float *ab = new float[N * M];
+
+    // Initialize the flattened matrices
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < K; ++j) {
+            a[i * K + j] = inputs[i][j];
+        }
+    }
+
     for (int i = 0; i < M; ++i) {
-        for (int j = 0; j < num_samples; ++j) {
-            for (int k = 0; k < K; ++k) {
-                a[(j * K + k) * M + i] = inputs[j][k];
-                std::cout << a[(j * K + k) * M + i] << " ";
-            }
+        for (int j = 0; j < K; ++j) {
+            b[j * M + i] = weights[i * K + j];
+        }
+    }
+
+    // print matrices a and b
+    /*std::cout << "Matrix a:" << std::endl;
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < K; ++j) {
+            std::cout << a[i * K + j] << " ";
         }
         std::cout << std::endl;
     }
-
-    // Flatten weights matrix appropriately
-    float *b = new float[K * num_samples * M];
-    float *ab = new float[M * num_samples];
-
-    for (int i = 0; i < M; ++i) {
-        for (int j = 0; j < num_samples; ++j) {
-            for (int k = 0; k < K; ++k) {
-                b[(j * K + k) * M + i] = weights[i * K + k];
-            }
-        }
-    }
-    std::cout << "Flattened weights b:" << std::endl;
-    for (int i = 0; i < (K * num_samples * M); ++i) {
+    std::cout << "Matrix b:" << std::endl;
+    for (int i = 0; i < K*M; ++i) {
         std::cout << b[i] << " ";
     }
-    std::cout << std::endl;
+    std::cout << std::endl;*/
 
-    std::cout << "Flattened weights a:" << std::endl;
-    for (int i = 0; i < (K * M * num_samples); ++i) {
-        std::cout << a[i] << " ";
-    }
-    std::cout << std::endl;
+    // Perform matrix multiplication
+    matMul(a, b, ab, M, K, N);
 
-    std::cout << "Weights b:" << std::endl;
-    // Output the weights matrix b
-    for (int i = 0; i < K * num_samples; ++i) {
+    // Print the result
+    /*std::cout << "Result ab:" << std::endl;
+    for (int i = 0; i < N; ++i) {
         for (int j = 0; j < M; ++j) {
-            std::cout << b[i * M + j] << " ";
+            std::cout << ab[i * M + j] << " ";
         }
         std::cout << std::endl;
-    }
-
-
-    // Debug prints for verification
-    /*std::cout << "Replicated input a:" << std::endl;
-    for (int i = 0; i < K * M; ++i) {
-        std::cout << " " << a[i];
-        if ((i + 1) % K == 0) std::cout << std::endl;
-    }
-
-    std::cout << "Flattened weights b:" << std::endl;
-    for (int i = 0; i < K * M; ++i) {
-        std::cout << " " << b[i];
-        if ((i + 1) % M == 0) std::cout << std::endl;
     }*/
 
-    matMul(a, b, ab, M, K*num_samples, num_samples);
-
-    // Debug prints for verification
-    // Output the results
-    std::cout << "Result ab:" << std::endl;
-    for (int j = 0; j < num_samples; ++j) {
-        for (int i = 0; i < M; ++i) {
-            std::cout << ab[j * M + i] << " ";
-        } std::cout << std::endl;
+    // copy results in outputs
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < M; ++j) {
+            outputs[i][j] = ab[i * M + j];
+        }
     }
-    std::cout << std::endl;
 
-    // Assign the result to outputs
-    // outputs.assign(ab, ab + M);
-
-    // Clean up allocated memory
     delete[] a;
     delete[] b;
     delete[] ab;

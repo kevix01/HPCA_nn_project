@@ -16,7 +16,7 @@ enum class ActivationFunction {
 class LinearLayer {
 public:
     LinearLayer(int inputSize, int outputSize, ActivationFunction activation, unsigned int seed = 0);
-    ~LinearLayer() = default;
+    //~LinearLayer() = default;
 
     // Forward pass
     std::vector<std::vector<float>> forwardCPU(const std::vector<std::vector<float>>& inputs);

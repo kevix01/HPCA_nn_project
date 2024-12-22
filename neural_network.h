@@ -17,7 +17,7 @@
 class NeuralNetwork {
 public:
     explicit NeuralNetwork(DeviceType device);
-    ~NeuralNetwork() = default;
+    // ~NeuralNetwork() = default;
 
     // Add a layer to the network
     void addLayer(int inputSize, int outputSize, ActivationFunction activation);
