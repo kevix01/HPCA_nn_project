@@ -3,12 +3,32 @@
 //
 
 #include <iostream>
-#include <vector>
+#include <cuda_matmul.h>
 #include <cuda_runtime.h>
+
+typedef float (*activationFunc)(float);
+
+__device__ float relu(float x) {
+    return fmaxf(0.0f, x);
+}
+
+__device__ float sigmoid(float x) {
+    return 1.0f / (1.0f + expf(-x));
+}
+
+__device__ float activate(float x, ActivationFunctionType act_type) {
+    if (act_type == RELU) {
+        return relu(x);
+    } else if (act_type == SIGMOID) {
+        return sigmoid(x);
+    }
+    return x;
+}
+
 
 #define TILE_WIDTH 16
 
-__global__ void matMulKernel(float *a, float *b, float *ab, int N, int K, int M) {
+__global__ void matMulKernel(float *a, float *b, float *ab, int N, int K, int M, ActivationFunctionType act_type) {
     int tx = threadIdx.x, ty = threadIdx.y;
     int bx = blockIdx.x, by = blockIdx.y;
 
@@ -30,11 +50,14 @@ __global__ void matMulKernel(float *a, float *b, float *ab, int N, int K, int M)
     }
 
     if (row < N && col < M) {
-        ab[row * M + col] = result;
+        // ab[row * M + col] = ab[row * M + col] + result;
+        //printf("Value before activation: %f\n", ab[row * M + col]);
+        ab[row * M + col] = activate(ab[row * M + col] + result, act_type);
+        //printf("Value after activation: %f\n", ab[row * M + col]);
     }
 }
 
-void matMul(float *a, float *b, float *ab, int M, int K, int N) {
+void matMul(float *a, float *b, float *ab, int M, int K, int N, ActivationFunctionType act_type) {
     float *d_a, *d_b, *d_ab;
     size_t sizeA = N * K * sizeof(float);
     size_t sizeB = K * M * sizeof(float);
@@ -53,8 +76,12 @@ void matMul(float *a, float *b, float *ab, int M, int K, int N) {
     dim3 blockDim(TILE_WIDTH, TILE_WIDTH);
     dim3 gridDim((M + TILE_WIDTH - 1) / TILE_WIDTH, (N + TILE_WIDTH - 1) / TILE_WIDTH);
 
+    // Select the activation function
+    //activationFunc activate_dev;
+    //cudaMemcpyFromSymbol(&activate_dev, activate, sizeof(activationFunc));
+
     // Launch the kernel
-    matMulKernel<<<gridDim, blockDim>>>(d_a, d_b, d_ab, N, K, M);
+    matMulKernel<<<gridDim, blockDim>>>(d_a, d_b, d_ab, N, K, M, act_type);
 
     // Copy results from device to host
     cudaMemcpy(ab, d_ab, sizeAB, cudaMemcpyDeviceToHost);

@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
     // std::cout << num_threads << std::endl;
 
 
-    DeviceType device = CUDA;  // or CUDA
+    DeviceType device = CPU;  // or CUDA
     NeuralNetwork nn(device);
 
     // Add layers

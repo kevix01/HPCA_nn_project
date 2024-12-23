@@ -30,6 +30,7 @@ public:
 
     void matMulCuda(const std::vector<std::vector<float>>& inputs, std::vector<std::vector<float>>& outputs);
 
+
 private:
     int inputSize;
     int outputSize;

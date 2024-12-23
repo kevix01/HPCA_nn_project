@@ -10,8 +10,7 @@
 #include <random>
 #include <omp.h>
 #include <sys/wait.h>
-
-
+//#include <cuda_matmul.cu>
 #include "cuda_matmul.h"
 
 LinearLayer::LinearLayer(int inputSize, int outputSize, ActivationFunction activation, unsigned int seed)
@@ -40,12 +39,12 @@ std::vector<std::vector<float>> LinearLayer::forwardCUDA(const std::vector<std::
         std::cout << std::endl;
     }*/
     matMulCuda(inputs, output);
-    for (size_t i = 0; i < output.size(); ++i) {
+    /*for (size_t i = 0; i < output.size(); ++i) {
         for (size_t j = 0; j < output[i].size(); ++j) {
-            output[i][j] += biases[j];
-            output[i][j] = activate(output[i][j]);
+            // output[i][j] += biases[j];
+            // output[i][j] = activate(output[i][j]);
         }
-    }
+    }*/
     outputCache = output;
     return output;
 }
@@ -369,8 +368,22 @@ void LinearLayer::matMulCuda(const std::vector<std::vector<float>>& inputs, std:
     }
     std::cout << std::endl;*/
 
+    // insert in ab elements the bias
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < M; ++j) {
+            ab[i * M + j] = biases[j];
+        }
+    }
+
+    // Select the activation function type
+    ActivationFunctionType act_type;
+    if (activation == ActivationFunction::ReLU) {
+        act_type = RELU;
+    } else if (activation == ActivationFunction::Sigmoid) {
+        act_type = SIGMOID;
+    }
     // Perform matrix multiplication
-    matMul(a, b, ab, M, K, N);
+    matMul(a, b, ab, M, K, N, act_type);
 
     // Print the result
     /*std::cout << "Result ab:" << std::endl;
