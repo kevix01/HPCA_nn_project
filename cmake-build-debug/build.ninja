@@ -98,6 +98,13 @@ build CMakeFiles/hpca_nn.dir/dataset_loader.cpp.o: CXX_COMPILER__hpca_nn_unscann
   OBJECT_DIR = CMakeFiles/hpca_nn.dir
   OBJECT_FILE_DIR = CMakeFiles/hpca_nn.dir
 
+build CMakeFiles/hpca_nn.dir/backward_cuda.cu.o: CUDA_COMPILER__hpca_nn_unscanned_Debug /home/kevin/Scrivania/HPCA/HPCA_nn_project/backward_cuda.cu || cmake_object_order_depends_target_hpca_nn
+  DEP_FILE = CMakeFiles/hpca_nn.dir/backward_cuda.cu.o.d
+  FLAGS = -g -std=c++20 "--generate-code=arch=compute_75,code=[compute_75,sm_75]"
+  INCLUDES = -I/home/kevin/Scrivania/HPCA/HPCA_nn_project
+  OBJECT_DIR = CMakeFiles/hpca_nn.dir
+  OBJECT_FILE_DIR = CMakeFiles/hpca_nn.dir
+
 
 # =============================================================================
 # Device Link build statements for EXECUTABLE target hpca_nn
@@ -106,7 +113,7 @@ build CMakeFiles/hpca_nn.dir/dataset_loader.cpp.o: CXX_COMPILER__hpca_nn_unscann
 #############################################
 # Link the executable CMakeFiles/hpca_nn.dir/cmake_device_link.o
 
-build CMakeFiles/hpca_nn.dir/cmake_device_link.o: CXX_EXECUTABLE_DEVICE_LINKER__hpca_nn_Debug CMakeFiles/hpca_nn.dir/main.cpp.o CMakeFiles/hpca_nn.dir/neural_network.cpp.o CMakeFiles/hpca_nn.dir/linear_layer.cpp.o CMakeFiles/hpca_nn.dir/neuron.cpp.o CMakeFiles/hpca_nn.dir/cuda_matmul.cu.o CMakeFiles/hpca_nn.dir/parameters.cpp.o CMakeFiles/hpca_nn.dir/dataset_loader.cpp.o | /usr/lib/gcc/x86_64-linux-gnu/13/libgomp.so /usr/lib/x86_64-linux-gnu/libpthread.a
+build CMakeFiles/hpca_nn.dir/cmake_device_link.o: CXX_EXECUTABLE_DEVICE_LINKER__hpca_nn_Debug CMakeFiles/hpca_nn.dir/main.cpp.o CMakeFiles/hpca_nn.dir/neural_network.cpp.o CMakeFiles/hpca_nn.dir/linear_layer.cpp.o CMakeFiles/hpca_nn.dir/neuron.cpp.o CMakeFiles/hpca_nn.dir/cuda_matmul.cu.o CMakeFiles/hpca_nn.dir/parameters.cpp.o CMakeFiles/hpca_nn.dir/dataset_loader.cpp.o CMakeFiles/hpca_nn.dir/backward_cuda.cu.o | /usr/lib/gcc/x86_64-linux-gnu/13/libgomp.so /usr/lib/x86_64-linux-gnu/libpthread.a
   LANGUAGE_COMPILE_FLAGS = -g "--generate-code=arch=compute_75,code=[compute_75,sm_75]"
   LINK_LIBRARIES = /usr/lib/x86_64-linux-gnu/libpthread.a -lcudadevrt -lcudart_static -lrt -lpthread -ldl
   LINK_PATH = -L/usr/local/cuda-12.6/targets/x86_64-linux/lib/stubs  -L/usr/local/cuda-12.6/targets/x86_64-linux/lib
@@ -120,7 +127,7 @@ build CMakeFiles/hpca_nn.dir/cmake_device_link.o: CXX_EXECUTABLE_DEVICE_LINKER__
 #############################################
 # Link the executable hpca_nn
 
-build hpca_nn: CXX_EXECUTABLE_LINKER__hpca_nn_Debug CMakeFiles/hpca_nn.dir/main.cpp.o CMakeFiles/hpca_nn.dir/neural_network.cpp.o CMakeFiles/hpca_nn.dir/linear_layer.cpp.o CMakeFiles/hpca_nn.dir/neuron.cpp.o CMakeFiles/hpca_nn.dir/cuda_matmul.cu.o CMakeFiles/hpca_nn.dir/parameters.cpp.o CMakeFiles/hpca_nn.dir/dataset_loader.cpp.o CMakeFiles/hpca_nn.dir/cmake_device_link.o | /usr/lib/gcc/x86_64-linux-gnu/13/libgomp.so /usr/lib/x86_64-linux-gnu/libpthread.a
+build hpca_nn: CXX_EXECUTABLE_LINKER__hpca_nn_Debug CMakeFiles/hpca_nn.dir/main.cpp.o CMakeFiles/hpca_nn.dir/neural_network.cpp.o CMakeFiles/hpca_nn.dir/linear_layer.cpp.o CMakeFiles/hpca_nn.dir/neuron.cpp.o CMakeFiles/hpca_nn.dir/cuda_matmul.cu.o CMakeFiles/hpca_nn.dir/parameters.cpp.o CMakeFiles/hpca_nn.dir/dataset_loader.cpp.o CMakeFiles/hpca_nn.dir/backward_cuda.cu.o CMakeFiles/hpca_nn.dir/cmake_device_link.o | /usr/lib/gcc/x86_64-linux-gnu/13/libgomp.so /usr/lib/x86_64-linux-gnu/libpthread.a
   FLAGS = -g
   LINK_LIBRARIES = /usr/lib/gcc/x86_64-linux-gnu/13/libgomp.so  /usr/lib/x86_64-linux-gnu/libpthread.a  -lcudadevrt  -lcudart_static  -lrt  -lpthread  -ldl
   LINK_PATH = -L/usr/local/cuda-12.6/targets/x86_64-linux/lib/stubs   -L/usr/local/cuda-12.6/targets/x86_64-linux/lib

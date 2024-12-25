@@ -18,26 +18,22 @@ int main(int argc, char* argv[]) {
     // std::cout << num_threads << std::endl;
 
 
-    DeviceType device = CPU;  // or CUDA
+    DeviceType device = CUDA;  // or CUDA
     NeuralNetwork nn(device);
 
     // Add layers
-    nn.addLayer(6824, 4, ActivationFunction::ReLU); // Hidden layer with 4 neurons
-    nn.addLayer(4, 1, ActivationFunction::Sigmoid); // Output layer with 1 neuron
+    nn.addLayer(6824, 400, ActivationFunction::ReLU); // Hidden layer with 4 neurons
+    nn.addLayer(400, 1, ActivationFunction::Sigmoid); // Output layer with 1 neuron
 
     if (device == CPU && parallelImplCpu != No) {
         nn.setForwardSamplesNumThreads(params.getFSamplesNumThreads());
         nn.setForwardOutNeuronsNumThreads(params.getFOutNeuronsNumThreads());
-        nn.setForwardInNeuronsNumThreads(params.getFInNeuronsNumThreads());
         nn.setBackwardOutNeuronsNumThreads(params.getBOutNeuronsNumThreads());
-        nn.setBackwardDeltasNumThreads(params.getBDeltasNumThreads());
         nn.setBackwardInNeuronsNumThreads(params.getBInNeuronsNumThreads());
     }
     std::cout << params.getFSamplesNumThreads() << std::endl;
     std::cout << params.getFOutNeuronsNumThreads() << std::endl;
-    std::cout << params.getFInNeuronsNumThreads() << std::endl;
     std::cout << params.getBOutNeuronsNumThreads() << std::endl;
-    std::cout << params.getBDeltasNumThreads() << std::endl;
     std::cout << params.getBInNeuronsNumThreads() << std::endl;
 
 
@@ -73,7 +69,7 @@ int main(int argc, char* argv[]) {
     // std::vector<int> labels = {0, 1, 1, 0};
 
     // Train the network
-    nn.train(inputs, labels, 0.1f, 300, 100, No);
+    nn.train(inputs, labels, 0.1f, 10, 10, parallelImplCpu);
 
     // Test the network
     auto predictions = nn.predict(inputs, parallelImplCpu);

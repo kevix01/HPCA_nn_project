@@ -39,7 +39,7 @@ void NeuralNetwork::train(const std::vector<std::vector<float>>& inputs, const s
                 // std::cout << "Output: " << output[j][0] << std::endl;
             }
 
-            //backward(output, labelsBatch, learningRate, parallelImplCpu);
+            backward(output, labelsBatch, learningRate, parallelImplCpu);
 
             /*for (int j = 0; j < currentBatchSize; ++j) {
                 auto input = inputs[i + j];
@@ -85,7 +85,7 @@ std::vector<std::vector<float>> NeuralNetwork::forward(const std::vector<std::ve
         else if (parallelImplCpu == OpenMP) {
             //std::cout << "OpenMP parallelism" << std::endl;
             for (auto& layer : layers) {
-                activations = layer->forwardCPUopenMP(activations, forward_samples_num_threads, forward_out_neurons_num_threads, forward_in_neurons_num_threads);
+                activations = layer->forwardCPUopenMP(activations, forward_samples_num_threads, forward_out_neurons_num_threads);
             }
         } else if (parallelImplCpu == processes) {
             for (auto& layer : layers) {
@@ -142,7 +142,7 @@ void NeuralNetwork::backward(const std::vector<std::vector<float>>& output, cons
         }
         else if (parallelImplCpu == OpenMP) {
             for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
-                grad = (*it)->backwardCPUopenMP(grad, learningRate, backward_out_neurons_num_threads, backward_deltas_num_threads, backward_in_neurons_num_threads);
+                grad = (*it)->backwardCPUopenMP(grad, learningRate, backward_out_neurons_num_threads, backward_in_neurons_num_threads);
                 //std::cout << "New elements in grad: " ;
                 /*for (auto grad_elem : grad) {
                     for (auto elem : grad_elem) {
@@ -151,6 +151,11 @@ void NeuralNetwork::backward(const std::vector<std::vector<float>>& output, cons
                 }
                 std::cout << std::endl;*/
             }
+        }
+    }
+    else if (device == CUDA) {
+        for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
+            grad = (*it)->backwardCUDA(grad, learningRate);
         }
     }
 }

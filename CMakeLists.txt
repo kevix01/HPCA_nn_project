@@ -26,6 +26,9 @@ add_executable(hpca_nn
         parameters.cpp
         dataset_loader.h
         dataset_loader.cpp
+        backward_cuda.cu
+        backward_cuda.h
+        actf_type_cuda.h
 )
 
 # Set target properties
@@ -34,14 +37,22 @@ set_target_properties(hpca_nn PROPERTIES
         LINKER_LANGUAGE CXX
 )
 
+# Pass --fmad=false to the NVCC compiler
+# target_compile_options(hpca_nn PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--fmad=false>)
+
 # Link CUDA libraries (if needed)
 target_link_libraries(hpca_nn ${CUDA_LIBRARIES})
 
+# Enable verbose build output and compilation database
+# set(CMAKE_VERBOSE_MAKEFILE ON)
+# set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Link OpenMP (if available)
 find_package(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(hpca_nn PUBLIC OpenMP::OpenMP_CXX)
 endif()
+
 
 
 #########################################################

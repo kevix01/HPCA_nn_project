@@ -14,10 +14,8 @@ public:
     // int getNumThreads() const;
     ParallelImplCpu getParallelImplCpu() const;
     int getFOutNeuronsNumThreads() const;
-    int getFInNeuronsNumThreads() const;
     int getFSamplesNumThreads() const;
     int getBOutNeuronsNumThreads() const;
-    int getBDeltasNumThreads() const;
     int getBInNeuronsNumThreads() const;
 
 private:
@@ -25,9 +23,7 @@ private:
     ParallelImplCpu parallel_impl_cpu = No;
     int f_samples_num_threads = 1;
     int f_out_neurons_num_threads = 1;
-    int f_in_neurons_num_threads = 1;
     int b_out_neurons_num_threads = 1;
-    int b_deltas_num_threads = 1;
     int b_in_neurons_num_threads = 1;
 
     void parseArguments(int argc, char* argv[]);

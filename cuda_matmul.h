@@ -5,15 +5,13 @@
 #ifndef CUDA_MATMUL_H
 #define CUDA_MATMUL_H
 
+#include <actf_type_cuda.h>
+
 #ifdef __CUDACC__
 #define CUDA_FUNC_DECL __host__ __device__
 #else
 #define CUDA_FUNC_DECL
 #endif
-
-typedef int ActivationFunctionType;
-const ActivationFunctionType RELU = 1;
-const ActivationFunctionType SIGMOID = 2;
 
 CUDA_FUNC_DECL float relu(float x);
 CUDA_FUNC_DECL float sigmoid(float x);
