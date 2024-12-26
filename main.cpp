@@ -22,8 +22,8 @@ int main(int argc, char* argv[]) {
     NeuralNetwork nn(device);
 
     // Add layers
-    nn.addLayer(6824, 400, ActivationFunction::ReLU); // Hidden layer with 4 neurons
-    nn.addLayer(400, 1, ActivationFunction::Sigmoid); // Output layer with 1 neuron
+    nn.addLayer(6824, 4, ActivationFunction::ReLU); // Hidden layer with 4 neurons
+    nn.addLayer(4, 1, ActivationFunction::Sigmoid); // Output layer with 1 neuron
 
     if (device == CPU && parallelImplCpu != No) {
         nn.setForwardSamplesNumThreads(params.getFSamplesNumThreads());
@@ -68,14 +68,18 @@ int main(int argc, char* argv[]) {
     std::vector<int> labels = loader.getLabels();
     // std::vector<int> labels = {0, 1, 1, 0};
 
+    // Use only first 2 samples in the dataset
+    inputs = std::vector<std::vector<float>>(inputs.begin(), inputs.begin() + 2);
+    labels = std::vector<int>(labels.begin(), labels.begin() + 2);
+
     // Train the network
-    nn.train(inputs, labels, 0.1f, 10, 10, parallelImplCpu);
+    nn.train(inputs, labels, 0.1f, 2, 2, parallelImplCpu);
 
     // Test the network
-    auto predictions = nn.predict(inputs, parallelImplCpu);
+    /*auto predictions = nn.predict(inputs, parallelImplCpu);
     for (size_t i = 0; i < predictions.size(); ++i) {
         std::cout << "Input: " << inputs[i][0] << ", " << inputs[i][1] << " -> Predicted: " << predictions[i] << std::endl;
-    }
+    }*/
 
     return 0;
 }

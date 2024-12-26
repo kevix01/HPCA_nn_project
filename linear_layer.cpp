@@ -275,7 +275,8 @@ std::vector<std::vector<float>> LinearLayer::backwardCPUopenMP(const std::vector
     return gradInput;
 }
 
-std::vector<std::vector<float>> LinearLayer::backward(const std::vector<std::vector<float>>& grad, float learningRate) {
+// NO FLATTENED DELTAS AND NOT DELTAS SAVING -> LESS MEMORY USAGE
+/*std::vector<std::vector<float>> LinearLayer::backward(const std::vector<std::vector<float>>& grad, float learningRate) {
     std::vector<std::vector<float>> gradInput(grad.size(), std::vector<float>(inputSize, 0.0f));
 
     for (int i = 0; i < outputSize; ++i) {
@@ -307,7 +308,87 @@ std::vector<std::vector<float>> LinearLayer::backward(const std::vector<std::vec
     }
 
     return gradInput;
+}*/
+
+std::vector<std::vector<float>> LinearLayer::backward(const std::vector<std::vector<float>>& grad, float learningRate) {
+    std::vector<std::vector<float>> gradInput(grad.size(), std::vector<float>(inputSize, 0.0f));
+    std::vector<float> flattenedDeltas(grad.size() * outputSize, 0.0f); // Flattened deltas storage
+
+    /*if (outputSize == 4) {
+        // print all grad given
+        for (int i = 0; i < grad.size(); i++) {
+            for (int j = 0; j < outputSize; j++) {
+                std::cout << "Grad " << i << " " << j << ": " << grad[i][j] << std::endl;
+            }
+        }
+    }*/
+
+    for (int i = 0; i < outputSize; ++i) {
+        float avg_delta = 0.0f;
+
+        // Calculate deltas and average delta in a single loop
+        for (int k = 0; k < grad.size(); ++k) {
+            float delta = grad[k][i] * activateDerivative(outputCache[k][i]);
+            avg_delta += delta;
+            flattenedDeltas[k * outputSize + i] = delta; // Store in flattened order
+        }
+        avg_delta /= grad.size();
+        //std::cout << "Avg delta for neuron " << i << ": " << avg_delta << std::endl;
+
+        // Update weights and accumulate gradInput
+        for (int j = 0; j < inputSize; ++j) {
+            float weight_step = 0.0f;
+            for (int k = 0; k < grad.size(); ++k) {
+                weight_step += flattenedDeltas[k * outputSize + i] * inputCache[k][j];
+                //if (inputSize <=4)
+                    //std::cout << "Partial weight step for neuron with delta index " << k*outputSize + i << " and input value " << inputCache[k][j] << ", sample " << k << " and input " << j << ": " << flattenedDeltas[k * outputSize + i] * inputCache[k][j] << std::endl;
+                gradInput[k][j] += flattenedDeltas[k * outputSize + i] * weights[i * inputSize + j];
+            }
+            /*if (inputSize <=4) {
+                // print all gradInput values
+                for (int k = 0; k < grad.size(); ++k) {
+                    std::cout << "GradInput for sample " << k << " and input " << j << ": " << gradInput[k][j] << std::endl;
+                }
+            }*/
+            // std::cout << grad.size();
+            weight_step /= grad.size();
+            //if (inputSize <=4)
+                //std::cout << "Weight step update for neuron " << i << " and input " << j << ": " << weight_step << std::endl;
+            weights[i * inputSize + j] -= learningRate * weight_step;
+            //if (inputSize > 4)
+                //std::cout << "Weight update for neuron " << i << " and input " << j << ": " << weights[i * inputSize + j] << std::endl;
+        }
+
+        // Update biases
+        biases[i] -= learningRate * avg_delta;
+    }
+    /*if (inputSize > 4) {
+        std::cout << "Biases" << std::endl;
+        // Print the biases
+        for (int i = 0; i<biases.size(); ++i) {
+            std::cout << biases[i] << " ";
+        }
+        std::cout << std::endl;
+    }*/
+    // Print flattened deltas for debugging
+    /*std::cout << "Flattened deltas:\n";
+    for (size_t idx = 0; idx < flattenedDeltas.size(); ++idx) {
+        std::cout << flattenedDeltas[idx] << " ";
+        if ((idx + 1) % outputSize == 0) std::cout << "\n"; // New line after each batch
+    }
+    std::cout << std::endl;*/
+
+    /*if (outputSize <= 1) {
+        for (int i = 0; i < outputSize; i++) {
+            for (int j = 0; j < inputSize; j++) {
+                std::cout << "Weight " << i << " " << j << ": " << weights[i * inputSize + j] << std::endl;
+            }
+        }
+    }*/
+
+    return gradInput;
 }
+
 
 std::vector<std::vector<float>> LinearLayer::backwardCUDA(const std::vector<std::vector<float>>& grad, float learningRate) {
     int batchSize = grad.size();
@@ -347,6 +428,13 @@ std::vector<std::vector<float>> LinearLayer::backwardCUDA(const std::vector<std:
             gradInput[k][j] = flatGradInput[k * inputSize + j];
         }
     }
+
+    /*std::cout << "Biases" << std::endl;
+    // Print the biases
+    for (int i = 0; i<biases.size(); ++i) {
+        std::cout << biases[i] << " ";
+    }
+    std::cout << std::endl;*/
 
     return gradInput;
 }
