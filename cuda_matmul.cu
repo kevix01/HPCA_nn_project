@@ -71,6 +71,7 @@ void matMul(float *a, float *b, float *ab, int M, int K, int N, ActivationFuncti
     // Copy data from host to device
     cudaMemcpy(d_a, a, sizeA, cudaMemcpyHostToDevice);
     cudaMemcpy(d_b, b, sizeB, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_ab, ab, sizeAB, cudaMemcpyHostToDevice);
 
     // Define block and grid dimensions
     dim3 blockDim(TILE_WIDTH, TILE_WIDTH);

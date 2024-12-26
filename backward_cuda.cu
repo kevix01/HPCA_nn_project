@@ -61,24 +61,26 @@ __global__ void updateWeightsAndGradInput(const float* deltas, const float* inpu
         // float delta = deltas[gradIndex];
         weight_step += deltas[gradIndex] * inputCache[inputIndex];
         //if (inputSize <= 4)
-            //printf("Partial weight step for neuron with delta index %d, input value %f, sample %d and input %d: %f\n", gradIndex, inputCache[inputIndex], k, j, deltas[gradIndex] * inputCache[inputIndex]);
+        //printf("Partial weight step for neuron with delta index %d, input value %f, sample %d and input %d: %f\n", gradIndex, inputCache[inputIndex], k, j, deltas[gradIndex] * inputCache[inputIndex]);
         atomicAdd(&gradInput[inputIndex], deltas[gradIndex] * weights[i * inputSize + j]);
     }
-    /*if (inputSize <= 4 && idx == 0) {
-        // print all gradInput
+    //if (inputSize <= 4 && idx == 0) {
+    // print all gradInput
+    /*if (idx == 0) {
         for (int k = 0; k < batchSize; ++k) {
             for (int j = 0; j < inputSize; ++j) {
                 printf("GradInput for sample %d and input %d: %f\n", k, j, gradInput[k * inputSize + j]);
             }
         }
     }*/
+    //}
     weight_step /= batchSize;
     //if (inputSize >4)
-        //printf("Weight step update for neuron %d, input %d: %f\n", i, j, weight_step);
+    // printf("Weight step update for neuron %d, input %d: %f\n", i, j, weight_step);
 
     atomicAdd(&weights[i * inputSize + j], -learningRate * weight_step);
     //if (inputSize <=4)
-        //printf("Weight value for neuron %d, input %d: %f\n", i, j, weights[i * inputSize + j]);
+    // printf("Weight value for neuron %d, input %d: %f\n", i, j, weights[i * inputSize + j]);
     //weights[i * inputSize + j] -= learningRate * weight_step;
 }
 
@@ -221,7 +223,7 @@ std::vector<float> backward_cuda(const std::vector<float>& grad, const std::vect
     // Kernel launch configurations
     int blockSize = 512;
     int numBlocksDeltas = (outputSize + blockSize - 1) / blockSize;
-    // int numBlocksWeights = ((outputSize * inputSize) + blockSize - 1) / blockSize;
+    int numBlocksWeights = ((outputSize * inputSize) + blockSize - 1) / blockSize;
 
     // Launch kernels
     computeDeltasAndBiases<<<numBlocksDeltas, blockSize>>>(d_grad, d_outputCache, d_deltas, d_biases, batchSize, outputSize, learningRate, act_type);
@@ -239,13 +241,13 @@ std::vector<float> backward_cuda(const std::vector<float>& grad, const std::vect
             std::cout << "Bias " << i << ": " << biases_host[i] << std::endl;
         }
     }*/
-    dim3 blockDim(16, 16); // 32x32 threads per block
+    /*dim3 blockDim(16, 16); // 32x32 threads per block
     dim3 gridDim((outputSize + blockDim.x - 1) / blockDim.x,
                  (inputSize + blockDim.y - 1) / blockDim.y);
     updateWeightsAndGradInput<<<gridDim, blockDim>>>(d_deltas, d_inputCache, d_weights, d_gradInput,
-                                                     inputSize, outputSize, batchSize, learningRate);
+                                                     inputSize, outputSize, batchSize, learningRate);*/
 
-    // updateWeightsAndGradInput<<<numBlocksWeights, blockSize>>>(d_deltas, d_inputCache, d_weights, d_gradInput, inputSize, outputSize, batchSize, learningRate);
+    updateWeightsAndGradInput<<<numBlocksWeights, blockSize>>>(d_deltas, d_inputCache, d_weights, d_gradInput, inputSize, outputSize, batchSize, learningRate);
 
     // Synchronize
     cudaDeviceSynchronize();

@@ -92,7 +92,7 @@ std::vector<std::vector<float>> NeuralNetwork::forward(const std::vector<std::ve
                // activations = layer->forwardCPUprocesses(activations, num_processes, 40, 40);
             }
         }
-        return activations;
+        //return activations;
     } else if (device == CUDA) {
         for (auto& layer : layers) {
             activations = layer->forwardCUDA(activations);

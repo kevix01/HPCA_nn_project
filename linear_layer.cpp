@@ -32,13 +32,28 @@ LinearLayer::LinearLayer(int inputSize, int outputSize, ActivationFunction activ
 }
 std::vector<std::vector<float>> LinearLayer::forwardCUDA(const std::vector<std::vector<float>>& inputs) {
     inputCache = inputs;
+    // print input
+    std::cout << "Input: " << std::endl;
+    for (int i = 0; i < inputs.size(); ++i) {
+        for (int j = 0; j < inputs[i].size(); ++j) {
+            std::cout << inputs[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
     std::vector<std::vector<float>> output(inputs.size(), std::vector<float>(outputSize));
-    /*for (int i = 0; i < outputSize; ++i) {
+    std::cout << "Weights: " << std::endl;
+    for (int i = 0; i < outputSize; ++i) {
         for (int j = 0; j < inputSize; ++j) {
             std::cout << weights[i * inputSize + j] << " ";
         }
         std::cout << std::endl;
-    }*/
+    }
+    // print biases
+    std::cout << "Biases: " << std::endl;
+    for (int i = 0; i < outputSize; ++i) {
+        std::cout << biases[i] << " ";
+    }
+    std::cout << std::endl;
     matMulCuda(inputs, output);
     /*for (size_t i = 0; i < output.size(); ++i) {
         for (size_t j = 0; j < output[i].size(); ++j) {
@@ -47,19 +62,42 @@ std::vector<std::vector<float>> LinearLayer::forwardCUDA(const std::vector<std::
         }
     }*/
     outputCache = output;
+    // print output
+    std::cout << "Output: " << std::endl;
+    for (int i = 0; i < output.size(); ++i) {
+        for (int j = 0; j < output[i].size(); ++j) {
+            std::cout << output[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
     return output;
 }
 
 std::vector<std::vector<float>> LinearLayer::forwardCPU(const std::vector<std::vector<float>>& inputs) {
     inputCache = inputs;
+    // print input
+    std::cout << "Input: " << std::endl;
+    for (int i = 0; i < inputs.size(); ++i) {
+        for (int j = 0; j < inputs[i].size(); ++j) {
+            std::cout << inputs[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
     std::vector<std::vector<float>> output(inputs.size(), std::vector<float>(outputSize));
     // print weights
-    /*for (int i = 0; i < outputSize; ++i) {
+    std::cout << "Weights: " << std::endl;
+    for (int i = 0; i < outputSize; ++i) {
         for (int j = 0; j < inputSize; ++j) {
             std::cout << weights[i * inputSize + j] << " ";
         }
         std::cout << std::endl;
-    }*/
+    }
+    // print biases
+    std::cout << "Biases: " << std::endl;
+    for (int i = 0; i < outputSize; ++i) {
+        std::cout << biases[i] << " ";
+    }
+    std::cout << std::endl;
     int sample_id = 0;
     for (auto input : inputs) {
         for (int i = 0; i < outputSize; ++i) {
@@ -75,6 +113,14 @@ std::vector<std::vector<float>> LinearLayer::forwardCPU(const std::vector<std::v
         // std::cout << std::endl;
     }
     outputCache = output;
+    // print output
+    std::cout << "Output: " << std::endl;
+    for (int i = 0; i < output.size(); ++i) {
+        for (int j = 0; j < output[i].size(); ++j) {
+            std::cout << output[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
     return output;
 }
 
@@ -344,16 +390,16 @@ std::vector<std::vector<float>> LinearLayer::backward(const std::vector<std::vec
                     //std::cout << "Partial weight step for neuron with delta index " << k*outputSize + i << " and input value " << inputCache[k][j] << ", sample " << k << " and input " << j << ": " << flattenedDeltas[k * outputSize + i] * inputCache[k][j] << std::endl;
                 gradInput[k][j] += flattenedDeltas[k * outputSize + i] * weights[i * inputSize + j];
             }
-            /*if (inputSize <=4) {
-                // print all gradInput values
-                for (int k = 0; k < grad.size(); ++k) {
-                    std::cout << "GradInput for sample " << k << " and input " << j << ": " << gradInput[k][j] << std::endl;
-                }
+            //if (inputSize <=4) {
+            // print all gradInput values
+            /*for (int k = 0; k < grad.size(); ++k) {
+                std::cout << "GradInput for sample " << k << " and input " << j << ": " << gradInput[k][j] << std::endl;
             }*/
+            //}
             // std::cout << grad.size();
             weight_step /= grad.size();
             //if (inputSize <=4)
-                //std::cout << "Weight step update for neuron " << i << " and input " << j << ": " << weight_step << std::endl;
+            // std::cout << "Weight step update for neuron " << i << " and input " << j << ": " << weight_step << std::endl;
             weights[i * inputSize + j] -= learningRate * weight_step;
             //if (inputSize > 4)
                 //std::cout << "Weight update for neuron " << i << " and input " << j << ": " << weights[i * inputSize + j] << std::endl;
@@ -378,13 +424,12 @@ std::vector<std::vector<float>> LinearLayer::backward(const std::vector<std::vec
     }
     std::cout << std::endl;*/
 
-    /*if (outputSize <= 1) {
-        for (int i = 0; i < outputSize; i++) {
-            for (int j = 0; j < inputSize; j++) {
-                std::cout << "Weight " << i << " " << j << ": " << weights[i * inputSize + j] << std::endl;
-            }
+    /*for (int i = 0; i < outputSize; i++) {
+        for (int j = 0; j < inputSize; j++) {
+            std::cout << "Weight " << i << " " << j << ": " << weights[i * inputSize + j] << std::endl;
         }
     }*/
+
 
     return gradInput;
 }
