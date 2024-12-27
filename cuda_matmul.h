@@ -17,10 +17,10 @@ CUDA_FUNC_DECL float relu(float x);
 CUDA_FUNC_DECL float sigmoid(float x);
 
 #ifdef __CUDACC__
-__global__ void matMulKernel(float *a, float *b, float *ab, int N, int K, int M, ActivationFunctionType act_type);
+__global__ void matMulKernel(float *a, float *b, float *ab, int N, int K, int M, ActivationFunctionType act_type, int TILE_WIDTH);
 #endif
 
-void matMul(float *a, float *b, float *ab, int M, int K, int N, ActivationFunctionType act_type);
+void matMul(float *a, float *b, float *ab, int M, int K, int N, ActivationFunctionType act_type, int TILE_WIDTH);
 
 #endif // CUDA_MATMUL_H
 

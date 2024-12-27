@@ -22,19 +22,18 @@ int main(int argc, char* argv[]) {
     NeuralNetwork nn(device);
 
     // Add layers
-    nn.addLayer(4, 2, ActivationFunction::ReLU); // Hidden layer with 4 neurons
-    nn.addLayer(2, 1, ActivationFunction::Sigmoid); // Output layer with 1 neuron
+    nn.addLayer(6824, 100, ActivationFunction::ReLU); // Hidden layer with 4 neurons
+    nn.addLayer(100, 1, ActivationFunction::Sigmoid); // Output layer with 1 neuron
 
     if (device == CPU && parallelImplCpu != No) {
-        nn.setForwardSamplesNumThreads(params.getFSamplesNumThreads());
-        nn.setForwardOutNeuronsNumThreads(params.getFOutNeuronsNumThreads());
-        nn.setBackwardOutNeuronsNumThreads(params.getBOutNeuronsNumThreads());
-        nn.setBackwardInNeuronsNumThreads(params.getBInNeuronsNumThreads());
+        nn.setOpenmpThreads(params.getOpenmpThreads());
+    } else if (device == CUDA) {
+        nn.setCudaForwardTileSize(params.getCudaFTileSize());
+        nn.setCudaBackwardBlockSize(params.getCudaBBlockSize());
     }
-    std::cout << params.getFSamplesNumThreads() << std::endl;
-    std::cout << params.getFOutNeuronsNumThreads() << std::endl;
-    std::cout << params.getBOutNeuronsNumThreads() << std::endl;
-    std::cout << params.getBInNeuronsNumThreads() << std::endl;
+    std::cout << "OpenMP threads: " << params.getOpenmpThreads() << std::endl;
+    std::cout << "CUDA forward tile size: " << params.getCudaFTileSize() << std::endl;
+    std::cout << "CUDA backward block size: " << params.getCudaBBlockSize() << std::endl;
 
 
     // Define the label mapping
@@ -68,17 +67,17 @@ int main(int argc, char* argv[]) {
     // std::vector<int> labels = {0, 1, 1, 0};
 
     // Use only first 2 samples in the dataset
-    inputs = std::vector<std::vector<float>>(inputs.begin(), inputs.begin() + 2);
-    labels = std::vector<int>(labels.begin(), labels.begin() + 2);
+    //inputs = std::vector<std::vector<float>>(inputs.begin(), inputs.begin() + 2);
+    // labels = std::vector<int>(labels.begin(), labels.begin() + 2);
     // cut features to the first 100 features
-    for (auto& feature : inputs) {
+    /*for (auto& feature : inputs) {
         feature = std::vector<float>(feature.begin(), feature.begin() + 4);
-    }
+    }*/
     std::cout << "Features: " << inputs[0].size() << std::endl;
 
 
     // Train the network
-    nn.train(inputs, labels, 0.1f, 2, 2, parallelImplCpu);
+    nn.train(inputs, labels, 0.1f, 200, 1000, parallelImplCpu);
 
     // Test the network
     /*auto predictions = nn.predict(inputs, parallelImplCpu);

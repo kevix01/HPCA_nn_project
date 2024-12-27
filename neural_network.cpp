@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <omp.h>
 
-NeuralNetwork::NeuralNetwork(DeviceType device): forward_in_neurons_num_threads(NULL), forward_out_neurons_num_threads(NULL) {
+NeuralNetwork::NeuralNetwork(DeviceType device): openmp_threads(NULL), cuda_forward_tile_size(NULL), cuda_backward_block_size(NULL) {
     this->device = device;
 }
 
@@ -18,10 +18,10 @@ void NeuralNetwork::addLayer(int inputSize, int outputSize, ActivationFunction a
 
 void NeuralNetwork::train(const std::vector<std::vector<float>>& inputs, const std::vector<int>& labels,
                           float learningRate, int epochs, int batchSize, ParallelImplCpu parallelImplCpu) {
-    if (device == CPU && parallelImplCpu == OpenMP) {
+    /*if (device == CPU && parallelImplCpu == OpenMP) {
         // Enable nested parallelism globally
         omp_set_nested(1);
-    }
+    }*/
     for (int epoch = 0; epoch < epochs; ++epoch) {
         float totalLoss = 0.0f;
         int correct = 0;
@@ -85,7 +85,7 @@ std::vector<std::vector<float>> NeuralNetwork::forward(const std::vector<std::ve
         else if (parallelImplCpu == OpenMP) {
             //std::cout << "OpenMP parallelism" << std::endl;
             for (auto& layer : layers) {
-                activations = layer->forwardCPUopenMP(activations, forward_samples_num_threads, forward_out_neurons_num_threads);
+                activations = layer->forwardCPUopenMP(activations, openmp_threads);
             }
         } else if (parallelImplCpu == processes) {
             for (auto& layer : layers) {
@@ -95,7 +95,7 @@ std::vector<std::vector<float>> NeuralNetwork::forward(const std::vector<std::ve
         //return activations;
     } else if (device == CUDA) {
         for (auto& layer : layers) {
-            activations = layer->forwardCUDA(activations);
+            activations = layer->forwardCUDA(activations, cuda_forward_tile_size);
         }
     }
     return activations;
@@ -142,7 +142,7 @@ void NeuralNetwork::backward(const std::vector<std::vector<float>>& output, cons
         }
         else if (parallelImplCpu == OpenMP) {
             for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
-                grad = (*it)->backwardCPUopenMP(grad, learningRate, backward_out_neurons_num_threads, backward_in_neurons_num_threads);
+                grad = (*it)->backwardCPUopenMP(grad, learningRate, openmp_threads);
                 //std::cout << "New elements in grad: " ;
                 /*for (auto grad_elem : grad) {
                     for (auto elem : grad_elem) {
@@ -155,7 +155,7 @@ void NeuralNetwork::backward(const std::vector<std::vector<float>>& output, cons
     }
     else if (device == CUDA) {
         for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
-            grad = (*it)->backwardCUDA(grad, learningRate);
+            grad = (*it)->backwardCUDA(grad, learningRate, cuda_backward_block_size);
         }
     }
 }

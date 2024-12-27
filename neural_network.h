@@ -30,38 +30,23 @@ public:
     std::vector<int> predict(const std::vector<std::vector<float>>& input,
                              ParallelImplCpu parallelImplCpu);
 
-    void setForwardOutNeuronsNumThreads(int forward_out_neurons_num_threads) {
-        this->forward_out_neurons_num_threads = forward_out_neurons_num_threads;
+    void setOpenmpThreads(int openmp_threads) {
+        this->openmp_threads = openmp_threads;
     }
 
-    void setForwardInNeuronsNumThreads(int forward_in_neurons_num_threads) {
-        this->forward_in_neurons_num_threads = forward_in_neurons_num_threads;
+    void setCudaForwardTileSize(int cuda_forward_tile_size) {
+        this->cuda_forward_tile_size = cuda_forward_tile_size;
     }
 
-    void setForwardSamplesNumThreads(int forward_samples_num_threads) {
-        this->forward_samples_num_threads = forward_samples_num_threads;
-    }
-
-    void setBackwardOutNeuronsNumThreads(int backward_out_neurons_num_threads) {
-        this->backward_out_neurons_num_threads = backward_out_neurons_num_threads;
-    }
-
-    void setBackwardDeltasNumThreads(int backward_deltas_num_threads) {
-        this->backward_deltas_num_threads = backward_deltas_num_threads;
-    }
-
-    void setBackwardInNeuronsNumThreads(int backward_in_neurons_num_threads) {
-        this->backward_in_neurons_num_threads = backward_in_neurons_num_threads;
+    void setCudaBackwardBlockSize(int cuda_backward_block_size) {
+        this->cuda_backward_block_size = cuda_backward_block_size;
     }
 
 private:
     DeviceType device;
-    int forward_samples_num_threads;
-    int forward_out_neurons_num_threads;
-    int forward_in_neurons_num_threads;
-    int backward_out_neurons_num_threads;
-    int backward_deltas_num_threads;
-    int backward_in_neurons_num_threads;
+    int openmp_threads;
+    int cuda_forward_tile_size;
+    int cuda_backward_block_size;
     std::vector<std::unique_ptr<LinearLayer>> layers;
 
     // Forward pass

@@ -30,31 +30,31 @@ LinearLayer::LinearLayer(int inputSize, int outputSize, ActivationFunction activ
         bias = 0.0f; // Initialize biases to zero
     }
 }
-std::vector<std::vector<float>> LinearLayer::forwardCUDA(const std::vector<std::vector<float>>& inputs) {
+std::vector<std::vector<float>> LinearLayer::forwardCUDA(const std::vector<std::vector<float>>& inputs, int tile_size) {
     inputCache = inputs;
     // print input
-    std::cout << "Input: " << std::endl;
+    /*std::cout << "Input: " << std::endl;
     for (int i = 0; i < inputs.size(); ++i) {
         for (int j = 0; j < inputs[i].size(); ++j) {
             std::cout << inputs[i][j] << " ";
         }
         std::cout << std::endl;
-    }
+    }*/
     std::vector<std::vector<float>> output(inputs.size(), std::vector<float>(outputSize));
-    std::cout << "Weights: " << std::endl;
+    /*std::cout << "Weights: " << std::endl;
     for (int i = 0; i < outputSize; ++i) {
         for (int j = 0; j < inputSize; ++j) {
             std::cout << weights[i * inputSize + j] << " ";
         }
         std::cout << std::endl;
-    }
+    }*/
     // print biases
-    std::cout << "Biases: " << std::endl;
+    /*std::cout << "Biases: " << std::endl;
     for (int i = 0; i < outputSize; ++i) {
         std::cout << biases[i] << " ";
     }
-    std::cout << std::endl;
-    matMulCuda(inputs, output);
+    std::cout << std::endl;*/
+    matMulCuda(inputs, output, tile_size);
     /*for (size_t i = 0; i < output.size(); ++i) {
         for (size_t j = 0; j < output[i].size(); ++j) {
             // output[i][j] += biases[j];
@@ -63,13 +63,13 @@ std::vector<std::vector<float>> LinearLayer::forwardCUDA(const std::vector<std::
     }*/
     outputCache = output;
     // print output
-    std::cout << "Output: " << std::endl;
+    /*std::cout << "Output: " << std::endl;
     for (int i = 0; i < output.size(); ++i) {
         for (int j = 0; j < output[i].size(); ++j) {
             std::cout << output[i][j] << " ";
         }
         std::cout << std::endl;
-    }
+    }*/
     return output;
 }
 
@@ -170,7 +170,7 @@ std::vector<std::vector<float>> LinearLayer::forwardCPU(const std::vector<std::v
     return output;
 }*/
 
-std::vector<std::vector<float>> LinearLayer::forwardCPUopenMP(const std::vector<std::vector<float>>& inputs, int f_samples_num_threads, int f_out_neurons_num_threads) {
+/*std::vector<std::vector<float>> LinearLayer::forwardCPUopenMP(const std::vector<std::vector<float>>& inputs, int f_samples_num_threads, int f_out_neurons_num_threads) {
     inputCache = inputs;
     std::vector<std::vector<float>> output(inputs.size(), std::vector<float>(outputSize));
 
@@ -186,7 +186,7 @@ std::vector<std::vector<float>> LinearLayer::forwardCPUopenMP(const std::vector<
         /*if (omp_get_thread_num() == 0) { // Print only once
             #pragma omp critical
             std::cout << "Total number of threads for outer loop: " << omp_get_num_threads() << std::endl;
-        }*/
+        }
 
         const auto& input = inputs[sample_id];
 
@@ -195,7 +195,7 @@ std::vector<std::vector<float>> LinearLayer::forwardCPUopenMP(const std::vector<
             /*if (omp_get_thread_num() == 0) { // Print only once per outer iteration
                 #pragma omp critical
                 std::cout << "Total number of threads for middle loop: " << omp_get_num_threads() << std::endl;
-            }*/
+            }
 
             float sum = biases[i];
 
@@ -204,7 +204,7 @@ std::vector<std::vector<float>> LinearLayer::forwardCPUopenMP(const std::vector<
                 /*if (omp_get_thread_num() == 0) { // Print only once per middle iteration
                     #pragma omp critical
                     std::cout << "Total number of threads for inner loop: " << omp_get_num_threads() << std::endl;
-                }*/
+                }
 
                 sum += input[j] * weights[i * inputSize + j];
             }
@@ -216,8 +216,46 @@ std::vector<std::vector<float>> LinearLayer::forwardCPUopenMP(const std::vector<
 
     outputCache = output;
     return output;
-}
+}*/
 
+std::vector<std::vector<float>> LinearLayer::forwardCPUopenMP(const std::vector<std::vector<float>>& inputs, int total_threads)
+{
+    inputCache = inputs;
+    std::vector<std::vector<float>> output(inputs.size(), std::vector<float>(outputSize));
+
+    // Determine optimal thread distribution
+    int samples = inputs.size();
+    int out_neurons = outputSize;
+
+    // Compute approximate thread distribution
+    int samples_num_threads = std::min(samples, total_threads);
+    int out_neurons_num_threads = std::max(1, total_threads / samples_num_threads);
+
+    // Adjust if oversubscription occurs
+    samples_num_threads = std::min(samples, total_threads / out_neurons_num_threads);
+    out_neurons_num_threads = std::min(out_neurons, total_threads / samples_num_threads);
+
+    // Total threads are now bounded by min(samples, total_threads) * min(out_neurons, total_threads)
+    int effective_total_threads = samples_num_threads * out_neurons_num_threads;
+
+    #pragma omp parallel for num_threads(effective_total_threads) collapse(2)
+    for (int sample_id = 0; sample_id < samples; ++sample_id) {
+        for (int i = 0; i < out_neurons; ++i) {
+            float sum = biases[i];
+
+            // Compute sum for the current neuron
+            for (int j = 0; j < inputSize; ++j) {
+                sum += inputs[sample_id][j] * weights[i * inputSize + j];
+            }
+
+            // Apply activation and store in output
+            output[sample_id][i] = activate(sum);
+        }
+    }
+
+    outputCache = output;
+    return output;
+}
 
 
 
@@ -264,7 +302,7 @@ std::vector<std::vector<float>> LinearLayer::forwardCPUopenMP(const std::vector<
 }*/
 
 
-std::vector<std::vector<float>> LinearLayer::backwardCPUopenMP(const std::vector<std::vector<float>>& grad, float learningRate, int b_out_neurons_num_threads, int b_in_neurons_num_threads) {
+/*std::vector<std::vector<float>> LinearLayer::backwardCPUopenMP(const std::vector<std::vector<float>>& grad, float learningRate, int b_out_neurons_num_threads, int b_in_neurons_num_threads) {
     std::vector<std::vector<float>> gradInput(grad.size(), std::vector<float>(inputSize, 0.0f));
 
     // Determine the number of threads to use to avoid overheading
@@ -277,7 +315,7 @@ std::vector<std::vector<float>> LinearLayer::backwardCPUopenMP(const std::vector
         /*if (omp_get_thread_num() == 0) { // Print only once per middle iteration
             #pragma omp critical
             std::cout << "Total number of threads for outer loop: " << omp_get_num_threads() << std::endl;
-        }*/
+        }
         std::vector<float> deltas(grad.size());
         float avg_delta = 0.0f;
 
@@ -296,14 +334,14 @@ std::vector<std::vector<float>> LinearLayer::backwardCPUopenMP(const std::vector
             /*if (omp_get_thread_num() == 0) { // Print only once per middle iteration
                 #pragma omp critical
                 std::cout << "Total number of threads for inner loop: " << omp_get_num_threads() << std::endl;
-            }*/
+            }
             float weight_step = 0.0f; // Reset weight_step to zero at each iteration
             // #pragma omp parallel for reduction(+:weight_step) num_threads(deltas_num_threads)
             for (int k = 0; k < deltas.size(); ++k) {
                 /*if (omp_get_thread_num() == 0) { // Print only once per middle iteration
                     #pragma omp critical
                     std::cout << "Total number of threads for inner loop: " << omp_get_num_threads() << std::endl;
-                }*/
+                }
                 weight_step += deltas[k] * inputCache[k][j];
                 #pragma omp atomic
                 gradInput[k][j] += deltas[k] * weights[i * inputSize + j];
@@ -319,7 +357,56 @@ std::vector<std::vector<float>> LinearLayer::backwardCPUopenMP(const std::vector
     }
 
     return gradInput;
+}*/
+
+std::vector<std::vector<float>> LinearLayer::backwardCPUopenMP(const std::vector<std::vector<float>>& grad, float learningRate, int total_threads)
+{
+    std::vector<std::vector<float>> gradInput(grad.size(), std::vector<float>(inputSize, 0.0f));
+
+    // Determine the number of threads for parallelization
+    int num_threads = std::min(total_threads, outputSize * inputSize);
+
+    #pragma omp parallel num_threads(num_threads)
+    {
+        // Compute the thread ID and map it to the 2D space of outputSize x inputSize
+        int thread_id = omp_get_thread_num();
+        int total_tasks = outputSize * inputSize;
+
+        for (int task_id = thread_id; task_id < total_tasks; task_id += num_threads) {
+            int i = task_id / inputSize; // Row index
+            int j = task_id % inputSize; // Column index
+
+            // Compute deltas and accumulate gradients
+            std::vector<float> deltas(grad.size());
+            float avg_delta = 0.0f;
+
+            for (int k = 0; k < grad.size(); ++k) {
+                deltas[k] = grad[k][i] * activateDerivative(outputCache[k][i]);
+                avg_delta += deltas[k];
+                #pragma omp atomic
+                gradInput[k][j] += deltas[k] * weights[i * inputSize + j];
+            }
+            avg_delta /= deltas.size();
+
+            // Update weights
+            float weight_step = 0.0f;
+            for (int k = 0; k < grad.size(); ++k) {
+                weight_step += deltas[k] * inputCache[k][j];
+            }
+            weight_step /= deltas.size();
+            weights[i * inputSize + j] -= learningRate * weight_step;
+
+            // Update biases (only once per `i`, so handled outside the `j` loop)
+            if (j == 0) {
+                //#pragma omp atomic
+                biases[i] -= learningRate * avg_delta;
+            }
+        }
+    }
+
+    return gradInput;
 }
+
 
 // NO FLATTENED DELTAS AND NOT DELTAS SAVING -> LESS MEMORY USAGE
 /*std::vector<std::vector<float>> LinearLayer::backward(const std::vector<std::vector<float>>& grad, float learningRate) {
@@ -435,7 +522,7 @@ std::vector<std::vector<float>> LinearLayer::backward(const std::vector<std::vec
 }
 
 
-std::vector<std::vector<float>> LinearLayer::backwardCUDA(const std::vector<std::vector<float>>& grad, float learningRate) {
+std::vector<std::vector<float>> LinearLayer::backwardCUDA(const std::vector<std::vector<float>>& grad, float learningRate, int block_size) {
     int batchSize = grad.size();
     int gradFlatSize = batchSize * outputSize;
     int inputFlatSize = batchSize * inputSize;
@@ -464,7 +551,7 @@ std::vector<std::vector<float>> LinearLayer::backwardCUDA(const std::vector<std:
 
     // Call the CUDA function
     std::vector<float> flatGradInput = backward_cuda(flatGrad, flatOutputCache, flatInputCache, weights, biases,
-                                                     outputSize, inputSize, batchSize, learningRate, activationType);
+                                                     outputSize, inputSize, batchSize, learningRate, activationType, block_size);
 
     // Convert flat gradInput to 2D vector
     std::vector<std::vector<float>> gradInput(batchSize, std::vector<float>(inputSize));
@@ -535,7 +622,7 @@ float LinearLayer::activateDerivative(float x) {
     return 0.0f;
 }
 
-void LinearLayer::matMulCuda(const std::vector<std::vector<float>>& inputs, std::vector<std::vector<float>>& outputs) {
+void LinearLayer::matMulCuda(const std::vector<std::vector<float>>& inputs, std::vector<std::vector<float>>& outputs, int tile_size) {
     int M = outputs[0].size(); // Number of neurons
     int K = inputs[0].size(); // Number of input features
     int N = outputs.size();
@@ -587,7 +674,7 @@ void LinearLayer::matMulCuda(const std::vector<std::vector<float>>& inputs, std:
         act_type = SIGMOID;
     }
     // Perform matrix multiplication
-    matMul(a, b, ab, M, K, N, act_type);
+    matMul(a, b, ab, M, K, N, act_type, tile_size);
 
     // Print the result
     /*std::cout << "Result ab:" << std::endl;

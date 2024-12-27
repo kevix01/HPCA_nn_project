@@ -19,7 +19,7 @@ std::vector<float> backward_cuda(const std::vector<float>& grad,
                                  int inputSize,
                                  int batchSize,
                                  float learningRate,
-                                 ActivationFunctionType act_type);
+                                 ActivationFunctionType act_type, int block_size);
 
 #endif // BACKWARD_CUDA_H
 

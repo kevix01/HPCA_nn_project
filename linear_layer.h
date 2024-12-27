@@ -20,16 +20,16 @@ public:
 
     // Forward pass
     std::vector<std::vector<float>> forwardCPU(const std::vector<std::vector<float>>& inputs);
-    std::vector<std::vector<float>> forwardCPUopenMP(const std::vector<std::vector<float>>& inputs, int f_samples_num_threads, int f_out_neurons_num_threads);
+    std::vector<std::vector<float>> forwardCPUopenMP(const std::vector<std::vector<float>>& inputs, int total_threads);
     std::vector<std::vector<float>> forwardCPUprocesses(const std::vector<std::vector<float>>& inputs, int num_processes, int output_neurons_num_processes, int input_neurons_num_processes);
-    std::vector<std::vector<float>> forwardCUDA(const std::vector<std::vector<float>>& input);
+    std::vector<std::vector<float>> forwardCUDA(const std::vector<std::vector<float>>& input, int tile_size);
 
     // Backward pass
     std::vector<std::vector<float>> backward(const std::vector<std::vector<float>>& grad, float learningRate);
-    std::vector<std::vector<float>> backwardCPUopenMP(const std::vector<std::vector<float>>& grad, float learningRate, int b_out_neurons_num_threads, int b_in_neurons_num_threads);
-    std::vector<std::vector<float>> backwardCUDA(const std::vector<std::vector<float>>& grad, float learningRate);
+    std::vector<std::vector<float>> backwardCPUopenMP(const std::vector<std::vector<float>>& grad, float learningRate, int total_threads);
+    std::vector<std::vector<float>> backwardCUDA(const std::vector<std::vector<float>>& grad, float learningRate, int block_size);
 
-    void matMulCuda(const std::vector<std::vector<float>>& inputs, std::vector<std::vector<float>>& outputs);
+    void matMulCuda(const std::vector<std::vector<float>>& inputs, std::vector<std::vector<float>>& outputs, int tile_size);
 
 
 private:

@@ -13,18 +13,16 @@ public:
     Parameters(int argc, char* argv[]);
     // int getNumThreads() const;
     ParallelImplCpu getParallelImplCpu() const;
-    int getFOutNeuronsNumThreads() const;
-    int getFSamplesNumThreads() const;
-    int getBOutNeuronsNumThreads() const;
-    int getBInNeuronsNumThreads() const;
+    int getOpenmpThreads() const;
+    int getCudaFTileSize() const;
+    int getCudaBBlockSize() const;
 
 private:
     // int num_threads;
     ParallelImplCpu parallel_impl_cpu = No;
-    int f_samples_num_threads = 1;
-    int f_out_neurons_num_threads = 1;
-    int b_out_neurons_num_threads = 1;
-    int b_in_neurons_num_threads = 1;
+    int openmp_threads = 6;
+    int cuda_f_tile_size = 16;
+    int cuda_b_block_size = 512;
 
     void parseArguments(int argc, char* argv[]);
 };

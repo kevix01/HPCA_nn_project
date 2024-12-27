@@ -15,38 +15,32 @@ ParallelImplCpu Parameters::getParallelImplCpu() const {
     return parallel_impl_cpu;
 }
 
-int Parameters::getFSamplesNumThreads() const {
-    return f_samples_num_threads;
+int Parameters::getOpenmpThreads() const {
+    return openmp_threads;
 }
 
-int Parameters::getBInNeuronsNumThreads() const {
-    return b_in_neurons_num_threads;
+int Parameters::getCudaFTileSize() const {
+    return cuda_f_tile_size;
 }
 
-int Parameters::getBOutNeuronsNumThreads() const {
-    return b_out_neurons_num_threads;
-}
-
-int Parameters::getFOutNeuronsNumThreads() const {
-    return f_out_neurons_num_threads;
+int Parameters::getCudaBBlockSize() const {
+    return cuda_b_block_size;
 }
 
 void Parameters::parseArguments(int argc, char* argv[]) {
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
-        if (arg.find("--f_samples_num_threads=") == 0) {
-            f_samples_num_threads = std::atoi(arg.substr(24).c_str());
+        if (arg.find("--openmp_threads=") == 0) {
+            openmp_threads = std::atoi(arg.substr(17).c_str());
         } else if (arg.find("--parallel_impl_cpu=") == 0) {
             std::string parallel_impl_cpu_text = arg.substr(20);
             if (parallel_impl_cpu_text == "openmp") {
                 parallel_impl_cpu = OpenMP;
             }
-        } else if (arg.find("--f_out_neurons_num_threads=") == 0) {
-            f_out_neurons_num_threads = std::atoi(arg.substr(28).c_str());
-        } else if (arg.find("--b_out_neurons_num_threads=") == 0) {
-            b_out_neurons_num_threads = std::atoi(arg.substr(28).c_str());
-        } else if (arg.find("--b_in_neurons_num_threads=") == 0) {
-            b_in_neurons_num_threads = std::atoi(arg.substr(27).c_str());
+        } else if (arg.find("--cuda_f_tile_size=") == 0) {
+            cuda_f_tile_size = std::atoi(arg.substr(19).c_str());
+        } else if (arg.find("--cuda_b_block_size=") == 0) {
+            cuda_b_block_size = std::atoi(arg.substr(20).c_str());
         }
     }
 }
