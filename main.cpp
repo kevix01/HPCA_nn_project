@@ -5,7 +5,7 @@
 #include <iostream>
 #include <vector>
 
-#include "cuda_matmul.h"
+//#include "cuda_matmul.h"
 #include "dataset_loader.h"
 #include "device_type.h"
 #include "neural_network.h"
@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
 
 
     // Train the network
-    nn.train(inputs, labels, 0.1f, 200, 1000, parallelImplCpu);
+    nn.train(inputs, labels, 0.05f, 200, 100, parallelImplCpu);
 
     // Test the network
     /*auto predictions = nn.predict(inputs, parallelImplCpu);

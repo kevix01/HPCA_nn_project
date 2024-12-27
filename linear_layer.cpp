@@ -76,28 +76,28 @@ std::vector<std::vector<float>> LinearLayer::forwardCUDA(const std::vector<std::
 std::vector<std::vector<float>> LinearLayer::forwardCPU(const std::vector<std::vector<float>>& inputs) {
     inputCache = inputs;
     // print input
-    std::cout << "Input: " << std::endl;
+    /*std::cout << "Input: " << std::endl;
     for (int i = 0; i < inputs.size(); ++i) {
         for (int j = 0; j < inputs[i].size(); ++j) {
             std::cout << inputs[i][j] << " ";
         }
         std::cout << std::endl;
-    }
+    }*/
     std::vector<std::vector<float>> output(inputs.size(), std::vector<float>(outputSize));
     // print weights
-    std::cout << "Weights: " << std::endl;
+    /*std::cout << "Weights: " << std::endl;
     for (int i = 0; i < outputSize; ++i) {
         for (int j = 0; j < inputSize; ++j) {
             std::cout << weights[i * inputSize + j] << " ";
         }
         std::cout << std::endl;
-    }
+    }*/
     // print biases
-    std::cout << "Biases: " << std::endl;
+    /*std::cout << "Biases: " << std::endl;
     for (int i = 0; i < outputSize; ++i) {
         std::cout << biases[i] << " ";
     }
-    std::cout << std::endl;
+    std::cout << std::endl;*/
     int sample_id = 0;
     for (auto input : inputs) {
         for (int i = 0; i < outputSize; ++i) {
@@ -114,13 +114,13 @@ std::vector<std::vector<float>> LinearLayer::forwardCPU(const std::vector<std::v
     }
     outputCache = output;
     // print output
-    std::cout << "Output: " << std::endl;
+    /*std::cout << "Output: " << std::endl;
     for (int i = 0; i < output.size(); ++i) {
         for (int j = 0; j < output[i].size(); ++j) {
             std::cout << output[i][j] << " ";
         }
         std::cout << std::endl;
-    }
+    }*/
     return output;
 }
 
