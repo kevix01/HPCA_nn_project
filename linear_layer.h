@@ -25,11 +25,11 @@ public:
     std::vector<std::vector<float>> forwardCUDA(const std::vector<std::vector<float>>& input, int tile_size);
 
     // Backward pass
-    std::vector<std::vector<float>> backward(const std::vector<std::vector<float>>& grad, float learningRate);
+    std::vector<std::vector<float>> backwardCPU(const std::vector<std::vector<float>>& grad, float learningRate);
     std::vector<std::vector<float>> backwardCPUopenMP(const std::vector<std::vector<float>>& grad, float learningRate, int total_threads);
     std::vector<std::vector<float>> backwardCUDA(const std::vector<std::vector<float>>& grad, float learningRate, int block_size);
 
-    void matMulCuda(const std::vector<std::vector<float>>& inputs, std::vector<std::vector<float>>& outputs, int tile_size);
+    void performCudaMatMul(const std::vector<std::vector<float>>& inputs, std::vector<std::vector<float>>& outputs, int tile_size) const;
 
 
 private:

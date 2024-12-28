@@ -4,41 +4,67 @@
 
 #include <iostream>
 #include <vector>
+#include <algorithm>
+#include <chrono>
+#include <numeric>
+#include <random>
 
-//#include "cuda_matmul.h"
 #include "dataset_loader.h"
 #include "device_type.h"
 #include "neural_network.h"
 #include "parameters.h"
+#include "times_printing.h"
+
 
 int main(int argc, char* argv[]) {
     Parameters params(argc, argv);
     // int num_threads = params.getFSamplesNumThreads();
-    ParallelImplCpu parallelImplCpu = params.getParallelImplCpu();
     // std::cout << num_threads << std::endl;
 
 
-    DeviceType device = CUDA;  // or CUDA
+    DeviceType device = params.getDevice();
+    int train_batch_size = params.getTrainBatchSize();
+    int predict_batch_size = params.getPredictBatchSize();
+    int train_epochs = params.getTrainEpochs();
+    float learning_rate = params.getLearningRate();
+    std::cout << "Device: " << (device == CPU ? "CPU" : "CUDA") << std::endl;
     NeuralNetwork nn(device);
 
     // Add layers
-    nn.addLayer(6824, 100, ActivationFunction::ReLU); // Hidden layer with 4 neurons
-    nn.addLayer(100, 1, ActivationFunction::Sigmoid); // Output layer with 1 neuron
+    nn.addLayer(6824, 50, ActivationFunction::ReLU); // Hidden layer with 500 neurons
+    nn.addLayer(50, 10, ActivationFunction::ReLU); // Hidden layer with 50 neurons
+    nn.addLayer(10, 1, ActivationFunction::Sigmoid); // Output layer with 1 neuron
 
-    if (device == CPU && parallelImplCpu != No) {
-        nn.setOpenmpThreads(params.getOpenmpThreads());
+    // Load needed parameters
+    if (device == CPU){
+        ParallelImplCpu parallelImplCpu = params.getParallelImplCpu();
+        nn.setParallelImplCpu(parallelImplCpu);
+        if (parallelImplCpu == OpenMP) {
+            nn.setOpenmpThreads(params.getOpenmpThreads());
+            std::cout << "Parallelism: OpenMP" << std::endl;
+            std::cout << "OpenMP threads: " << params.getOpenmpThreads() << std::endl;
+        } else {
+            std::cout << "Parallelism: No" << std::endl;
+        }
     } else if (device == CUDA) {
         nn.setCudaForwardTileSize(params.getCudaFTileSize());
         nn.setCudaBackwardBlockSize(params.getCudaBBlockSize());
+        std::cout << "CUDA forward tile size: " << params.getCudaFTileSize() << std::endl;
+        std::cout << "CUDA backward block size: " << params.getCudaBBlockSize() << std::endl;
     }
-    std::cout << "OpenMP threads: " << params.getOpenmpThreads() << std::endl;
-    std::cout << "CUDA forward tile size: " << params.getCudaFTileSize() << std::endl;
-    std::cout << "CUDA backward block size: " << params.getCudaBBlockSize() << std::endl;
+
+    std::cout << "########### MODEL PARAMETERS ###########" << std::endl;
+    std::cout << "Train batch size: " << train_batch_size << std::endl;
+    std::cout << "Train epochs: " << train_epochs << std::endl;
+    std::cout << "Learning rate: " << learning_rate << std::endl;
+    std::cout << "Predict batch size: " << predict_batch_size << std::endl;
+    std::cout << "########################################" << std::endl;
 
 
     // Define the label mapping
     std::unordered_map<std::string, int> label_map = {{"B", 0}, {"M", 1}};
     DatasetLoader loader("../dataset/REJAFADA.data", "", ',', true, true, label_map);
+    std::cout << "Loading dataset..." << std::endl;
     loader.load();
     loader.normalizeFeatures();
     //std::cout << "Labels: " << loader.getLabels().size() << std::endl;
@@ -73,74 +99,63 @@ int main(int argc, char* argv[]) {
     /*for (auto& feature : inputs) {
         feature = std::vector<float>(feature.begin(), feature.begin() + 4);
     }*/
+    std::cout << "############# DATASET INFO #############" << std::endl;
     std::cout << "Features: " << inputs[0].size() << std::endl;
+    std::cout << "Number of samples: " << inputs.size() << std::endl;
+    std::cout << "Number of labels: " << labels.size() << std::endl;
+    std::cout << "########################################" << std::endl;
 
+    //shuffle inputs and labels but keep the correspondence
+    std::vector<std::vector<float>> shuffled_inputs;
+    std::vector<int> shuffled_labels;
+    std::vector<int> indices(inputs.size());
+    std::iota(indices.begin(), indices.end(), 0);
+    // shuffle indices with a generator and a specific seed
+    int shuffle_seed = 0;
+    std::mt19937 g(shuffle_seed);
+    std::ranges::shuffle(indices, g);
+    for (int i = 0; i < inputs.size(); ++i) {
+        shuffled_inputs.push_back(inputs[indices[i]]);
+        shuffled_labels.push_back(labels[indices[i]]);
+    }
 
+    std::cout << "Training..." << std::endl;
+    auto start_train = std::chrono::high_resolution_clock::now();
     // Train the network
-    nn.train(inputs, labels, 0.05f, 200, 100, parallelImplCpu);
+    nn.train(shuffled_inputs, shuffled_labels, learning_rate, train_epochs, train_batch_size);
+    auto end_train = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_train = end_train - start_train;
 
+    /*std::cout << "################################################## TIMES #################################################" << std::endl;
+    // print the time taken to train the network in format hh:mm:ss:ms:us
+    std::cout << "Time taken to train the network: " << std::chrono::duration_cast<std::chrono::hours>(elapsed_train).count() << " hours, ";
+    std::cout << std::chrono::duration_cast<std::chrono::minutes>(elapsed_train).count() % 60 << " minutes, ";
+    std::cout << std::chrono::duration_cast<std::chrono::seconds>(elapsed_train).count() % 60 << " seconds, ";
+    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_train).count() % 1000 << " milliseconds, ";
+    std::cout << std::chrono::duration_cast<std::chrono::microseconds>(elapsed_train).count() % 1000 << " microseconds" << std::endl;
+    std::cout << "##########################################################################################################" << std::endl;
+    */
+    std::cout << "Time taken to train the network:\n";
+    printElapsedTime(elapsed_train);
     // Test the network
-    /*auto predictions = nn.predict(inputs, parallelImplCpu);
+    int correct;
+    std::cout << "Predicting..." << std::endl;
+    auto start_predict = std::chrono::high_resolution_clock::now();
+    auto predictions = nn.predict(inputs, predict_batch_size);
+    auto end_predict = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_predict = end_predict - start_predict;
     for (size_t i = 0; i < predictions.size(); ++i) {
-        std::cout << "Input: " << inputs[i][0] << ", " << inputs[i][1] << " -> Predicted: " << predictions[i] << std::endl;
-    }*/
+        if (predictions[i] == labels[i]) {
+            correct++;
+        }
+        // std::cout << "Input " << i << ": -> Predicted: " << predictions[i] << ", Label: " << labels[i] << std::endl;
+    }
 
+    std::cout << "Time taken to predict the samples:\n";
+    printElapsedTime(elapsed_predict);
+
+    std::cout << "Predict accuracy: " << static_cast<float>(correct) / inputs.size() << std::endl;
     return 0;
 }
-
-/*int main() {
-    int N = 2; // Number of rows in matrix a
-    int K = 2; // Number of columns in matrix a and rows in matrix b
-    int M = 4; // Number of columns in matrix b
-
-    std::vector<std::vector<float>> inputs = {
-        {0.2, 0.8},
-        {0.5, 0.1}
-    };
-
-    std::vector<float> weights = {
-        -0.388729, 1.11917, 0.182146, -1.06618,
-        -0.991981, -0.73903, -1.3855, -0.222945
-    };
-
-    std::vector<std::vector<float>> outputs(N, std::vector<float>(M));
-
-    // Flatten input and weight matrices
-    float *a = new float[N * K];
-    float *b = new float[K * M];
-    float *ab = new float[N * M];
-
-    // Initialize the flattened matrices
-    for (int i = 0; i < N; ++i) {
-        for (int j = 0; j < K; ++j) {
-            a[i * K + j] = inputs[i][j];
-        }
-    }
-
-    for (int i = 0; i < K; ++i) {
-        for (int j = 0; j < M; ++j) {
-            b[i * M + j] = weights[i * M + j];
-        }
-    }
-
-    // Perform matrix multiplication
-    matMul(a, b, ab, M, K, N);
-
-    // Print the result
-    std::cout << "Result ab:" << std::endl;
-    for (int i = 0; i < N; ++i) {
-        for (int j = 0; j < M; ++j) {
-            std::cout << ab[i * M + j] << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    delete[] a;
-    delete[] b;
-    delete[] ab;
-
-    return 0;
-}*/
-
 
 

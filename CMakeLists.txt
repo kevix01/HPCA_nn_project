@@ -19,8 +19,8 @@ add_executable(hpca_nn
         linear_layer.cpp
         neuron.cpp
         device_type.h
-        cuda_matmul.h
-        cuda_matmul.cu
+        forward_cuda.h
+        forward_cuda.cu
         parallel_impl_cpu.h
         parameters.h
         parameters.cpp
@@ -29,6 +29,8 @@ add_executable(hpca_nn
         backward_cuda.cu
         backward_cuda.h
         actf_type_cuda.h
+        times_printing.cpp
+        times_printing.h
 )
 
 # Set target properties
@@ -44,7 +46,7 @@ set_target_properties(hpca_nn PROPERTIES
 target_link_libraries(hpca_nn ${CUDA_LIBRARIES})
 
 # Enable verbose build output and compilation database
-# set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 # set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Link OpenMP (if available)

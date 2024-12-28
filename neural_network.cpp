@@ -6,9 +6,12 @@
 #include <cmath>
 #include <iostream>
 #include <algorithm>
+#include <chrono>
 #include <omp.h>
 
-NeuralNetwork::NeuralNetwork(DeviceType device): openmp_threads(NULL), cuda_forward_tile_size(NULL), cuda_backward_block_size(NULL) {
+#include "times_printing.h"
+
+NeuralNetwork::NeuralNetwork(DeviceType device) {
     this->device = device;
 }
 
@@ -17,63 +20,61 @@ void NeuralNetwork::addLayer(int inputSize, int outputSize, ActivationFunction a
 }
 
 void NeuralNetwork::train(const std::vector<std::vector<float>>& inputs, const std::vector<int>& labels,
-                          float learningRate, int epochs, int batchSize, ParallelImplCpu parallelImplCpu) {
-    /*if (device == CPU && parallelImplCpu == OpenMP) {
-        // Enable nested parallelism globally
-        omp_set_nested(1);
-    }*/
+                          float learningRate, int epochs, int batchSize) {
+    auto elapsed_forward = std::chrono::duration<double>::zero();
+    auto elapsed_backward = std::chrono::duration<double>::zero();
     for (int epoch = 0; epoch < epochs; ++epoch) {
         float totalLoss = 0.0f;
-        int correct = 0;
 
         for (size_t i = 0; i < inputs.size(); i += batchSize) {
             int currentBatchSize = std::min(batchSize, static_cast<int>(inputs.size() - i));
             auto inputsBatch = std::vector<std::vector<float>>(inputs.begin() + i, inputs.begin() + i + currentBatchSize);
             auto labelsBatch = std::vector<int>(labels.begin() + i, labels.begin() + i + currentBatchSize);
 
-            auto output = forward(inputsBatch, parallelImplCpu);
+            auto start_forward = std::chrono::high_resolution_clock::now();
+            auto output = forward(inputsBatch);
+            auto end_forward = std::chrono::high_resolution_clock::now();
+            elapsed_forward += end_forward - start_forward;
+
             computeLoss(output, labelsBatch, totalLoss);
 
-            for (int j = 0; j < currentBatchSize; ++j) {
-                correct += (output[j][0] >= 0.5f) == labelsBatch[j];
-                // std::cout << "Output: " << output[j][0] << std::endl;
-            }
-
-            backward(output, labelsBatch, learningRate, parallelImplCpu);
-
-            /*for (int j = 0; j < currentBatchSize; ++j) {
-                auto input = inputs[i + j];
-                auto output = forward(input);
-                int label = labels[i + j];
-
-                computeLoss(output, labelsBatch, totalLoss);
-                correct += (output[0] >= 0.5f) == label;
-
-                backward(output, label, learningRate);
-            }*/
+            auto start_backward = std::chrono::high_resolution_clock::now();
+            backward(output, labelsBatch, learningRate);
+            auto end_backward = std::chrono::high_resolution_clock::now();
+            elapsed_backward += end_backward - start_backward;
         }
 
-        float accuracy = static_cast<float>(correct) / inputs.size();
         std::cout << "Epoch " << epoch + 1 << ", Loss: " << totalLoss / inputs.size()
-                  << ", Accuracy: " << accuracy << std::endl;
+                  << std::endl;
     }
+    std::cout << "Time taken to forward the network:\n";
+    printElapsedTime(elapsed_forward);
+
+    std::cout << "Time taken to backward the network:\n";
+    printElapsedTime(elapsed_backward);
 }
 
-std::vector<int> NeuralNetwork::predict(const std::vector<std::vector<float>>& input, ParallelImplCpu parallelImplCpu) {
-    if (device == CPU && parallelImplCpu == OpenMP) {
-        // Enable nested parallelism globally
-        omp_set_nested(1);
-    }
-    auto output = forward(input, parallelImplCpu);
+std::vector<int> NeuralNetwork::predict(const std::vector<std::vector<float>>& inputs, int batchSize) {
     std::vector<int> predictions;
-    for (auto& out : output) {
-        // std::cout << "Output: " << out[0] << std::endl;
-        predictions.push_back(out[0] >= 0.5f ? 1 : 0);
+    auto elapsed_forward = std::chrono::duration<double>::zero();
+
+    for (size_t i = 0; i < inputs.size(); i += batchSize) {
+        int currentBatchSize = std::min(batchSize, static_cast<int>(inputs.size() - i));
+        auto inputsBatch = std::vector<std::vector<float>>(inputs.begin() + i, inputs.begin() + i + currentBatchSize);
+        auto start_forward = std::chrono::high_resolution_clock::now();
+        auto outputs = forward(inputsBatch);
+        auto end_forward = std::chrono::high_resolution_clock::now();
+        elapsed_forward += end_forward - start_forward;
+        for (int j = 0; j < currentBatchSize; ++j) {
+            predictions.push_back(outputs[j][0] >= 0.5f ? 1 : 0);
+        }
     }
+    std::cout << "Time taken to forward the network:\n";
+    printElapsedTime(elapsed_forward);
     return predictions;
 }
 
-std::vector<std::vector<float>> NeuralNetwork::forward(const std::vector<std::vector<float>>& inputs, ParallelImplCpu parallelImplCpu) {
+std::vector<std::vector<float>> NeuralNetwork::forward(const std::vector<std::vector<float>>& inputs) {
     std::vector<std::vector<float>> activations = inputs;
     if (device == CPU) {
         if (parallelImplCpu == No){
@@ -87,12 +88,7 @@ std::vector<std::vector<float>> NeuralNetwork::forward(const std::vector<std::ve
             for (auto& layer : layers) {
                 activations = layer->forwardCPUopenMP(activations, openmp_threads);
             }
-        } else if (parallelImplCpu == processes) {
-            for (auto& layer : layers) {
-               // activations = layer->forwardCPUprocesses(activations, num_processes, 40, 40);
-            }
         }
-        //return activations;
     } else if (device == CUDA) {
         for (auto& layer : layers) {
             activations = layer->forwardCUDA(activations, cuda_forward_tile_size);
@@ -102,54 +98,24 @@ std::vector<std::vector<float>> NeuralNetwork::forward(const std::vector<std::ve
 }
 
 
-void NeuralNetwork::backward(const std::vector<std::vector<float>>& output, const std::vector<int>& labels, float learningRate, ParallelImplCpu parallelImplCpu) {
+void NeuralNetwork::backward(const std::vector<std::vector<float>>& output, const std::vector<int>& labels, float learningRate) {
     std::vector<std::vector<float>> grad = {};
     for (size_t i = 0; i < output.size(); ++i) {
-        grad.push_back({output[i][0] - static_cast<float>(labels[i])});
+        // grad.push_back({output[i][0] - static_cast<float>(labels[i])});
+        grad.push_back({2.0f * (output[i][0] - static_cast<float>(labels[i]))});
     }
-    /*std::cout << "Grad elements: " << grad.size() << std::endl;
-    std::cout << "Elements in grad: " ;
-    for (auto grad_elem : grad) {
-        for (auto elem : grad_elem) {
-            std::cout << elem << " ";
-        }
-    }
-    std::cout << std::endl;*/
-    // compute the average gradient
-    /*std::vector<float> avg_grad(grad[0].size(), 0.0f);
-    for (size_t i = 0; i < grad.size(); ++i) {
-        for (size_t j = 0; j < grad[i].size(); ++j) {
-            avg_grad[j] += grad[i][j];
-        }
-    }
-    for (size_t i = 0; i < avg_grad.size(); ++i) {
-        avg_grad[i] /= grad.size();
-    }*/
+
     // Iterate through the layers in reverse order
     // The returned gradient is the gradient of the loss with respect to the input of the layer
     if (device == CPU) {
         if (parallelImplCpu == No) {
             for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
-                grad = (*it)->backward(grad, learningRate);
-                //std::cout << "New elements in grad: " ;
-                /*for (auto grad_elem : grad) {
-                    for (auto elem : grad_elem) {
-                        std::cout << elem << " ";
-                    }
-                }
-                std::cout << std::endl;*/
+                grad = (*it)->backwardCPU(grad, learningRate);
             }
         }
         else if (parallelImplCpu == OpenMP) {
             for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
                 grad = (*it)->backwardCPUopenMP(grad, learningRate, openmp_threads);
-                //std::cout << "New elements in grad: " ;
-                /*for (auto grad_elem : grad) {
-                    for (auto elem : grad_elem) {
-                        std::cout << elem << " ";
-                    }
-                }
-                std::cout << std::endl;*/
             }
         }
     }
@@ -168,19 +134,4 @@ void NeuralNetwork::computeLoss(const std::vector<std::vector<float>>& output, s
         totalLoss += loss[sample_id];
         sample_id++;
     }
-    // float loss = - (label * std::log(output[0]) + (1 - label) * std::log(1 - output[0]));
-    // return loss;
 }
-
-/*float NeuralNetwork::computeAccuracy(const std::vector<std::vector<float>>& inputs, const std::vector<int>& labels) {
-    int correct = 0;
-    for (size_t i = 0; i < inputs.size(); ++i) {
-        correct += (predict(inputs[i]) == labels[i]);
-    }
-    return static_cast<float>(correct) / inputs.size();
-}*/
-
-
-
-
-
