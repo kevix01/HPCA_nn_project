@@ -21,6 +21,9 @@ std::chrono::duration<double> elapsed_forward = std::chrono::duration<double>::z
 std::chrono::duration<double> elapsed_f_kernel = std::chrono::duration<double>::zero();
 std::chrono::duration<double> elapsed_b_kernel_deltas = std::chrono::duration<double>::zero();
 std::chrono::duration<double> elapsed_b_kernel_weights = std::chrono::duration<double>::zero();
+std::chrono::duration<double> elapsed_forward_cpu = std::chrono::duration<double>::zero();
+std::chrono::duration<double> elapsed_backward_cpu = std::chrono::duration<double>::zero();
+
 
 int main(int argc, char* argv[]) {
     Parameters params(argc, argv);
@@ -157,10 +160,14 @@ int main(int argc, char* argv[]) {
         elapsed_f_kernel = std::chrono::duration<double>::zero();
         std::cout << "Time taken to compute backward kernel\nfor deltas and biases updates:\n";
         printElapsedTime(elapsed_b_kernel_deltas);
-        elapsed_b_kernel_deltas = std::chrono::duration<double>::zero();
         std::cout << "Time taken to compute backward kernel\nfor grad and weights updates:\n";
         printElapsedTime(elapsed_b_kernel_weights);
-        elapsed_b_kernel_weights = std::chrono::duration<double>::zero();
+    } else {
+        std::cout << "Time taken to compute forward computation:\n";
+        printElapsedTime(elapsed_forward_cpu);
+        elapsed_forward_cpu = std::chrono::duration<double>::zero();
+        std::cout << "Time taken to compute backward computation:\n";
+        printElapsedTime(elapsed_backward_cpu);
     }
 
     std::cout << "########################################" << std::endl;
@@ -186,6 +193,9 @@ int main(int argc, char* argv[]) {
     if (device == CUDA) {
         std::cout << "Time taken to compute forward kernel:\n";
         printElapsedTime(elapsed_f_kernel);
+    } else {
+        std::cout << "Time taken to compute forward computation:\n";
+        printElapsedTime(elapsed_forward_cpu);
     }
     std::cout << "########################################" << std::endl;
     std::cout << "Predict accuracy: " << static_cast<float>(correct) / inputs.size() << std::endl;

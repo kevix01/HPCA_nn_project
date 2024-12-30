@@ -5,8 +5,11 @@
 #ifndef LINEAR_LAYER_H
 #define LINEAR_LAYER_H
 
+#include <chrono>
 #include <vector>
-#include "device_type.h"
+
+extern std::chrono::duration<double> elapsed_backward_cpu;
+extern std::chrono::duration<double> elapsed_forward_cpu;
 
 enum class ActivationFunction {
     Sigmoid,

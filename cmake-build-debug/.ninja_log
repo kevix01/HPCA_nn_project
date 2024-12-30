@@ -86,3 +86,14 @@
 6	2295	1735558161749071509	CMakeFiles/hpca_nn.dir/main.cpp.o	22c034e0c7308c10
 2295	2376	1735558164038045101	CMakeFiles/hpca_nn.dir/cmake_device_link.o	ec482de4545d1827
 2376	2543	1735558164119044169	hpca_nn	f05a2da54ccbec5e
+4	2619	1735560189896813240	CMakeFiles/hpca_nn.dir/main.cpp.o	22c034e0c7308c10
+2619	2677	1735560192511806848	CMakeFiles/hpca_nn.dir/cmake_device_link.o	ec482de4545d1827
+2677	2819	1735560192569806707	hpca_nn	f05a2da54ccbec5e
+3	1532	1735577289578205219	CMakeFiles/hpca_nn.dir/neural_network.cpp.o	2288ac894b229c94
+3	1725	1735577289578205219	CMakeFiles/hpca_nn.dir/linear_layer.cpp.o	d49e44f0e0d01a22
+2	1784	1735577289577205221	CMakeFiles/hpca_nn.dir/main.cpp.o	22c034e0c7308c10
+1784	1821	1735577291359202038	CMakeFiles/hpca_nn.dir/cmake_device_link.o	ec482de4545d1827
+1821	1912	1735577291396201972	hpca_nn	f05a2da54ccbec5e
+3	998	1735578929240652368	CMakeFiles/hpca_nn.dir/times_printing.cpp.o	17e3da3bb02bbdda
+998	1035	1735578930235685141	CMakeFiles/hpca_nn.dir/cmake_device_link.o	ec482de4545d1827
+1035	1126	1735578930272686353	hpca_nn	f05a2da54ccbec5e

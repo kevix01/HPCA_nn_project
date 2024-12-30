@@ -94,6 +94,8 @@ std::vector<std::vector<float>> LinearLayer::forwardCPU(const std::vector<std::v
     std::vector<std::vector<float>> outputs(inputs.size(), std::vector<float>(outputSize));
 
     int sample_id = 0;
+
+    auto start_forwad_compute = std::chrono::high_resolution_clock::now();
     for (auto input : inputs) {
         for (int i = 0; i < outputSize; ++i) {
             float sum = biases[i];
@@ -104,6 +106,9 @@ std::vector<std::vector<float>> LinearLayer::forwardCPU(const std::vector<std::v
         }
         sample_id++;
     }
+    auto end_forward_compute = std::chrono::high_resolution_clock::now();
+    elapsed_forward_cpu += end_forward_compute - start_forwad_compute;
+
     outputCache = outputs;
 
     return outputs;
@@ -130,6 +135,7 @@ std::vector<std::vector<float>> LinearLayer::forwardCPUopenMP(const std::vector<
     // Total threads are now bounded by min(samples, total_threads) * min(out_neurons, total_threads)
     int effective_total_threads = samples_num_threads * out_neurons_num_threads;
 
+    auto start_forward_compute = std::chrono::high_resolution_clock::now();
     #pragma omp parallel for num_threads(effective_total_threads) collapse(2)
     for (int sample_id = 0; sample_id < samples; ++sample_id) {
         for (int i = 0; i < out_neurons; ++i) {
@@ -144,6 +150,8 @@ std::vector<std::vector<float>> LinearLayer::forwardCPUopenMP(const std::vector<
             outputs[sample_id][i] = activate(sum);
         }
     }
+    auto end_forward_compute = std::chrono::high_resolution_clock::now();
+    elapsed_forward_cpu += end_forward_compute - start_forward_compute;
 
     outputCache = outputs;
     return outputs;
@@ -157,6 +165,7 @@ std::vector<std::vector<float>> LinearLayer::backwardCPUopenMP(const std::vector
     // Determine the number of threads for parallelization
     int num_threads = std::min(total_threads, outputSize * inputSize);
 
+    auto start_backward_compute = std::chrono::high_resolution_clock::now();
     #pragma omp parallel num_threads(num_threads)
     {
         // Compute the thread ID and map it to the 2D space of outputSize x inputSize
@@ -194,6 +203,8 @@ std::vector<std::vector<float>> LinearLayer::backwardCPUopenMP(const std::vector
             }
         }
     }
+    auto end_backward_compute = std::chrono::high_resolution_clock::now();
+    elapsed_backward_cpu += end_backward_compute - start_backward_compute;
 
     return gradInput;
 }
@@ -202,6 +213,7 @@ std::vector<std::vector<float>> LinearLayer::backwardCPUopenMP(const std::vector
 std::vector<std::vector<float>> LinearLayer::backwardCPU(const std::vector<std::vector<float>>& grad, float learningRate) {
     std::vector<std::vector<float>> gradInput(grad.size(), std::vector<float>(inputSize, 0.0f));
 
+    auto start_backward_compute = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < outputSize; ++i) {
         std::vector<float> deltas(grad.size());
         float avg_delta = 0.0f;
@@ -229,6 +241,8 @@ std::vector<std::vector<float>> LinearLayer::backwardCPU(const std::vector<std::
             weights[i * inputSize + j] -= learningRate * weight_step;
         }
     }
+    auto end_backward_compute = std::chrono::high_resolution_clock::now();
+    elapsed_backward_cpu += end_backward_compute - start_backward_compute;
 
     return gradInput;
 }
