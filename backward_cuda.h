@@ -5,8 +5,24 @@
 #ifndef BACKWARD_CUDA_H
 #define BACKWARD_CUDA_H
 
+#include <chrono>
 #include <vector>
 #include "actf_type_cuda.h"
+
+extern std::chrono::duration<double> elapsed_b_kernel_deltas;
+extern std::chrono::duration<double> elapsed_b_kernel_weights;
+
+
+#define CHECK_CUDA_ERROR(call, cleanup) do {                                     \
+    cudaError_t err = call;                                                      \
+    if (err != cudaSuccess) {                                                    \
+        std::cerr << "CUDA Error in Backward: " << cudaGetErrorString(err)       \
+                  << " at " << __FILE__ << ":" << __LINE__ << std::endl;         \
+        cleanup;                                                                 \
+        exit(EXIT_FAILURE);                                                      \
+    }                                                                            \
+} while(0)
+
 
 
 // Function declaration for the CUDA backward pass

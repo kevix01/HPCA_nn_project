@@ -2,6 +2,7 @@
 // Created by kevin on 08/12/24.
 //
 
+#include <chrono>
 #include <iostream>
 #include <forward_cuda.h>
 #include <cuda_runtime.h>
@@ -53,7 +54,7 @@ __global__ void matMulKernel(float *a, float *b, float *ab, int N, int K, int M,
     }
 }
 
-void forwardMatMul(float *a, float *b, float *ab, int M, int K, int N, ActivationFunctionType act_type, int TILE_WIDTH) {
+/*void forwardMatMul(float *a, float *b, float *ab, int M, int K, int N, ActivationFunctionType act_type, int TILE_WIDTH) {
     float *d_a, *d_b, *d_ab;
     size_t sizeA = N * K * sizeof(float);
     size_t sizeB = K * M * sizeof(float);
@@ -86,4 +87,48 @@ void forwardMatMul(float *a, float *b, float *ab, int M, int K, int N, Activatio
     cudaFree(d_a);
     cudaFree(d_b);
     cudaFree(d_ab);
+}*/
+
+void forwardMatMul(float *a, float *b, float *ab, int M, int K, int N, ActivationFunctionType act_type, int TILE_WIDTH) {
+    float *d_a = nullptr, *d_b = nullptr, *d_ab = nullptr;
+    size_t sizeA = N * K * sizeof(float);
+    size_t sizeB = K * M * sizeof(float);
+    size_t sizeAB = N * M * sizeof(float);
+
+    // Allocate device memory
+    CHECK_CUDA_ERROR(cudaMalloc(&d_a, sizeA), {});
+    CHECK_CUDA_ERROR(cudaMalloc(&d_b, sizeB), cudaFree(d_a));
+    CHECK_CUDA_ERROR(cudaMalloc(&d_ab, sizeAB), { cudaFree(d_a); cudaFree(d_b); });
+
+    // Copy data from host to device
+    CHECK_CUDA_ERROR(cudaMemcpy(d_a, a, sizeA, cudaMemcpyHostToDevice), { cudaFree(d_a); cudaFree(d_b); cudaFree(d_ab); });
+    CHECK_CUDA_ERROR(cudaMemcpy(d_b, b, sizeB, cudaMemcpyHostToDevice), { cudaFree(d_a); cudaFree(d_b); cudaFree(d_ab); });
+    CHECK_CUDA_ERROR(cudaMemcpy(d_ab, ab, sizeAB, cudaMemcpyHostToDevice), { cudaFree(d_a); cudaFree(d_b); cudaFree(d_ab); });
+
+    // Define block and grid dimensions
+    dim3 blockDim(TILE_WIDTH, TILE_WIDTH);
+    dim3 gridDim((M + TILE_WIDTH - 1) / TILE_WIDTH, (N + TILE_WIDTH - 1) / TILE_WIDTH);
+
+    // Calculate shared memory size
+    size_t shared_mem_size = 2 * TILE_WIDTH * TILE_WIDTH * sizeof(float);
+
+    auto start_kernel = std::chrono::high_resolution_clock::now();
+    // Launch the kernel
+    matMulKernel<<<gridDim, blockDim, shared_mem_size>>>(d_a, d_b, d_ab, N, K, M, act_type, TILE_WIDTH);
+    auto end_kernel = std::chrono::high_resolution_clock::now();
+    elapsed_f_kernel += end_kernel - start_kernel;
+    CHECK_CUDA_ERROR(cudaPeekAtLastError(), { cudaFree(d_a); cudaFree(d_b); cudaFree(d_ab); });
+
+    // Synchronize to check for errors
+    CHECK_CUDA_ERROR(cudaDeviceSynchronize(), { cudaFree(d_a); cudaFree(d_b); cudaFree(d_ab); });
+
+    // Copy results from device to host
+    CHECK_CUDA_ERROR(cudaMemcpy(ab, d_ab, sizeAB, cudaMemcpyDeviceToHost), { cudaFree(d_a); cudaFree(d_b); cudaFree(d_ab); });
+
+    // Free device memory
+    CHECK_CUDA_ERROR(cudaFree(d_a), {});
+    CHECK_CUDA_ERROR(cudaFree(d_b), {});
+    CHECK_CUDA_ERROR(cudaFree(d_ab), {});
 }
+
+

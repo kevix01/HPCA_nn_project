@@ -6,8 +6,6 @@
 #include <cmath>
 #include <iostream>
 #include <algorithm>
-#include <chrono>
-#include <omp.h>
 
 #include "times_printing.h"
 
@@ -21,8 +19,6 @@ void NeuralNetwork::addLayer(int inputSize, int outputSize, ActivationFunction a
 
 void NeuralNetwork::train(const std::vector<std::vector<float>>& inputs, const std::vector<int>& labels,
                           float learningRate, int epochs, int batchSize) {
-    auto elapsed_forward = std::chrono::duration<double>::zero();
-    auto elapsed_backward = std::chrono::duration<double>::zero();
     for (int epoch = 0; epoch < epochs; ++epoch) {
         float totalLoss = 0.0f;
 
@@ -47,16 +43,11 @@ void NeuralNetwork::train(const std::vector<std::vector<float>>& inputs, const s
         std::cout << "Epoch " << epoch + 1 << ", Loss: " << totalLoss / inputs.size()
                   << std::endl;
     }
-    std::cout << "Time taken to forward the network:\n";
-    printElapsedTime(elapsed_forward);
-
-    std::cout << "Time taken to backward the network:\n";
-    printElapsedTime(elapsed_backward);
 }
 
 std::vector<int> NeuralNetwork::predict(const std::vector<std::vector<float>>& inputs, int batchSize) {
     std::vector<int> predictions;
-    auto elapsed_forward = std::chrono::duration<double>::zero();
+    //auto elapsed_forward = std::chrono::duration<double>::zero();
 
     for (size_t i = 0; i < inputs.size(); i += batchSize) {
         int currentBatchSize = std::min(batchSize, static_cast<int>(inputs.size() - i));
@@ -69,8 +60,6 @@ std::vector<int> NeuralNetwork::predict(const std::vector<std::vector<float>>& i
             predictions.push_back(outputs[j][0] >= 0.5f ? 1 : 0);
         }
     }
-    std::cout << "Time taken to forward the network:\n";
-    printElapsedTime(elapsed_forward);
     return predictions;
 }
 

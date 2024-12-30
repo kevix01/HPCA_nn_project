@@ -7,6 +7,18 @@
 
 #include <actf_type_cuda.h>
 
+extern std::chrono::duration<double> elapsed_f_kernel;
+
+#define CHECK_CUDA_ERROR(call, cleanup) do {                                     \
+    cudaError_t err = call;                                                      \
+    if (err != cudaSuccess) {                                                    \
+        std::cerr << "CUDA Error in Forward: " << cudaGetErrorString(err)       \
+                  << " at " << __FILE__ << ":" << __LINE__ << std::endl;         \
+        cleanup;                                                                 \
+        exit(EXIT_FAILURE);                                                      \
+    }                                                                            \
+} while(0)
+
 #ifdef __CUDACC__
 #define CUDA_FUNC_DECL __host__ __device__
 #else

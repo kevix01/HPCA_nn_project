@@ -11,10 +11,16 @@
 
 #include "dataset_loader.h"
 #include "device_type.h"
+#include "forward_cuda.h"
 #include "neural_network.h"
 #include "parameters.h"
 #include "times_printing.h"
 
+std::chrono::duration<double> elapsed_backward = std::chrono::duration<double>::zero();
+std::chrono::duration<double> elapsed_forward = std::chrono::duration<double>::zero();
+std::chrono::duration<double> elapsed_f_kernel = std::chrono::duration<double>::zero();
+std::chrono::duration<double> elapsed_b_kernel_deltas = std::chrono::duration<double>::zero();
+std::chrono::duration<double> elapsed_b_kernel_weights = std::chrono::duration<double>::zero();
 
 int main(int argc, char* argv[]) {
     Parameters params(argc, argv);
@@ -31,8 +37,8 @@ int main(int argc, char* argv[]) {
     NeuralNetwork nn(device);
 
     // Add layers
-    nn.addLayer(6824, 50, ActivationFunction::ReLU); // Hidden layer with 500 neurons
-    nn.addLayer(50, 10, ActivationFunction::ReLU); // Hidden layer with 50 neurons
+    nn.addLayer(6824, 50, ActivationFunction::ReLU); // First hidden layer
+    nn.addLayer(50, 10, ActivationFunction::ReLU); // Second hidden layer
     nn.addLayer(10, 1, ActivationFunction::Sigmoid); // Output layer with 1 neuron
 
     // Load needed parameters
@@ -135,8 +141,30 @@ int main(int argc, char* argv[]) {
     std::cout << std::chrono::duration_cast<std::chrono::microseconds>(elapsed_train).count() % 1000 << " microseconds" << std::endl;
     std::cout << "##########################################################################################################" << std::endl;
     */
+    std::cout << "############ TRAINING TIMES ############" << std::endl;
     std::cout << "Time taken to train the network:\n";
     printElapsedTime(elapsed_train);
+    elapsed_train = std::chrono::duration<double>::zero();
+    std::cout << "Time taken to forward the network:\n";
+    printElapsedTime(elapsed_forward);
+    elapsed_forward = std::chrono::duration<double>::zero();
+    std::cout << "Time taken to backward the network:\n";
+    printElapsedTime(elapsed_backward);
+    elapsed_backward = std::chrono::duration<double>::zero();
+    if (device == CUDA) {
+        std::cout << "Time taken to compute forward kernel:\n";
+        printElapsedTime(elapsed_f_kernel);
+        elapsed_f_kernel = std::chrono::duration<double>::zero();
+        std::cout << "Time taken to compute backward kernel\nfor deltas and biases updates:\n";
+        printElapsedTime(elapsed_b_kernel_deltas);
+        elapsed_b_kernel_deltas = std::chrono::duration<double>::zero();
+        std::cout << "Time taken to compute backward kernel\nfor grad and weights updates:\n";
+        printElapsedTime(elapsed_b_kernel_weights);
+        elapsed_b_kernel_weights = std::chrono::duration<double>::zero();
+    }
+
+    std::cout << "########################################" << std::endl;
+
     // Test the network
     int correct;
     std::cout << "Predicting..." << std::endl;
@@ -150,10 +178,16 @@ int main(int argc, char* argv[]) {
         }
         // std::cout << "Input " << i << ": -> Predicted: " << predictions[i] << ", Label: " << labels[i] << std::endl;
     }
-
+    std::cout << "########### PREDICTING TIMES ###########" << std::endl;
     std::cout << "Time taken to predict the samples:\n";
     printElapsedTime(elapsed_predict);
-
+    std::cout << "Time taken to forward the network:\n";
+    printElapsedTime(elapsed_forward);
+    if (device == CUDA) {
+        std::cout << "Time taken to compute forward kernel:\n";
+        printElapsedTime(elapsed_f_kernel);
+    }
+    std::cout << "########################################" << std::endl;
     std::cout << "Predict accuracy: " << static_cast<float>(correct) / inputs.size() << std::endl;
     return 0;
 }

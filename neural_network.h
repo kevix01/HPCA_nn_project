@@ -5,6 +5,7 @@
 #ifndef NEURAL_NETWORK_H
 #define NEURAL_NETWORK_H
 
+#include <chrono>
 #include <vector>
 #include <memory>
 
@@ -13,6 +14,8 @@
 #include "linear_layer.h"
 #include "parameters.h"
 
+extern std::chrono::duration<double> elapsed_backward;
+extern std::chrono::duration<double> elapsed_forward;
 
 class NeuralNetwork {
 public:
