@@ -111,7 +111,3 @@ The following command-line arguments are supported:
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
-
----
-
-For any questions or issues, please open an issue on the GitHub repository.
