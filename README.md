@@ -46,7 +46,7 @@ To build and run this project, you need the following dependencies:
 ## Build Instructions
 
 1. Clone the repository:  
-   `git clone https://github.com/kevix01/hpca_nn.git`  
+   `git clone https://github.com/kevix01/HPCA_nn_project.git`  
    `cd hpca_nn`
 
 2. Create a build directory:  
