@@ -18,7 +18,7 @@ enum class ActivationFunction {
 
 class LinearLayer {
 public:
-    LinearLayer(int inputSize, int outputSize, ActivationFunction activation, unsigned int seed = 0);
+    LinearLayer(int inputSize, int outputSize, ActivationFunction activation, unsigned int seed);
     //~LinearLayer() = default;
 
     // Forward pass

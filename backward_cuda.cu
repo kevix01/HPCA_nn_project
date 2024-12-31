@@ -76,21 +76,21 @@ std::vector<float> backward_cuda(const std::vector<float>& grad, const std::vect
     float *d_deltas = nullptr, *d_biases = nullptr, *d_weights = nullptr, *d_gradInput = nullptr;
 
     // Allocate device memory
-    CHECK_CUDA_ERROR(cudaMalloc(&d_grad, gradFlatSize * sizeof(float)), {});
-    CHECK_CUDA_ERROR(cudaMalloc(&d_outputCache, gradFlatSize * sizeof(float)), { cudaFree(d_grad); });
-    CHECK_CUDA_ERROR(cudaMalloc(&d_inputCache, inputFlatSize * sizeof(float)), { cudaFree(d_grad); cudaFree(d_outputCache); });
-    CHECK_CUDA_ERROR(cudaMalloc(&d_deltas, gradFlatSize * sizeof(float)), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); });
-    CHECK_CUDA_ERROR(cudaMalloc(&d_biases, outputSize * sizeof(float)), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); });
-    CHECK_CUDA_ERROR(cudaMalloc(&d_weights, outputSize * inputSize * sizeof(float)), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); });
-    CHECK_CUDA_ERROR(cudaMalloc(&d_gradInput, inputFlatSize * sizeof(float)), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); });
+    CHECK_CUDA_ERROR_B(cudaMalloc(&d_grad, gradFlatSize * sizeof(float)), {});
+    CHECK_CUDA_ERROR_B(cudaMalloc(&d_outputCache, gradFlatSize * sizeof(float)), { cudaFree(d_grad); });
+    CHECK_CUDA_ERROR_B(cudaMalloc(&d_inputCache, inputFlatSize * sizeof(float)), { cudaFree(d_grad); cudaFree(d_outputCache); });
+    CHECK_CUDA_ERROR_B(cudaMalloc(&d_deltas, gradFlatSize * sizeof(float)), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); });
+    CHECK_CUDA_ERROR_B(cudaMalloc(&d_biases, outputSize * sizeof(float)), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); });
+    CHECK_CUDA_ERROR_B(cudaMalloc(&d_weights, outputSize * inputSize * sizeof(float)), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); });
+    CHECK_CUDA_ERROR_B(cudaMalloc(&d_gradInput, inputFlatSize * sizeof(float)), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); });
 
     // Copy data to device
-    CHECK_CUDA_ERROR(cudaMemcpy(d_grad, grad.data(), gradFlatSize * sizeof(float), cudaMemcpyHostToDevice), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
-    CHECK_CUDA_ERROR(cudaMemcpy(d_outputCache, outputCache.data(), gradFlatSize * sizeof(float), cudaMemcpyHostToDevice), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
-    CHECK_CUDA_ERROR(cudaMemcpy(d_inputCache, inputCache.data(), inputFlatSize * sizeof(float), cudaMemcpyHostToDevice), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
-    CHECK_CUDA_ERROR(cudaMemcpy(d_weights, weights.data(), outputSize * inputSize * sizeof(float), cudaMemcpyHostToDevice), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
-    CHECK_CUDA_ERROR(cudaMemcpy(d_biases, biases.data(), outputSize * sizeof(float), cudaMemcpyHostToDevice), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
-    CHECK_CUDA_ERROR(cudaMemset(d_gradInput, 0, inputFlatSize * sizeof(float)), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
+    CHECK_CUDA_ERROR_B(cudaMemcpy(d_grad, grad.data(), gradFlatSize * sizeof(float), cudaMemcpyHostToDevice), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
+    CHECK_CUDA_ERROR_B(cudaMemcpy(d_outputCache, outputCache.data(), gradFlatSize * sizeof(float), cudaMemcpyHostToDevice), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
+    CHECK_CUDA_ERROR_B(cudaMemcpy(d_inputCache, inputCache.data(), inputFlatSize * sizeof(float), cudaMemcpyHostToDevice), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
+    CHECK_CUDA_ERROR_B(cudaMemcpy(d_weights, weights.data(), outputSize * inputSize * sizeof(float), cudaMemcpyHostToDevice), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
+    CHECK_CUDA_ERROR_B(cudaMemcpy(d_biases, biases.data(), outputSize * sizeof(float), cudaMemcpyHostToDevice), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
+    CHECK_CUDA_ERROR_B(cudaMemset(d_gradInput, 0, inputFlatSize * sizeof(float)), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
 
     // Kernel launch configurations
     int numBlocksDeltas = (outputSize + block_size - 1) / block_size;
@@ -101,93 +101,30 @@ std::vector<float> backward_cuda(const std::vector<float>& grad, const std::vect
     computeDeltasAndBiases<<<numBlocksDeltas, block_size>>>(d_grad, d_outputCache, d_deltas, d_biases, batchSize, outputSize, learningRate, act_type);
     auto end_kernel_deltas = std::chrono::high_resolution_clock::now();
     elapsed_b_kernel_deltas += end_kernel_deltas - start_kernel_deltas;
-    CHECK_CUDA_ERROR(cudaPeekAtLastError(), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
-    CHECK_CUDA_ERROR(cudaDeviceSynchronize(), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
+    CHECK_CUDA_ERROR_B(cudaPeekAtLastError(), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
+    CHECK_CUDA_ERROR_B(cudaDeviceSynchronize(), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
 
     auto start_kernel_weights = std::chrono::high_resolution_clock::now();
     updateWeightsAndGradInput<<<numBlocksWeights, block_size>>>(d_deltas, d_inputCache, d_weights, d_gradInput, inputSize, outputSize, batchSize, learningRate);
     auto end_kernel_weights = std::chrono::high_resolution_clock::now();
     elapsed_b_kernel_weights += end_kernel_weights - start_kernel_weights;
-    CHECK_CUDA_ERROR(cudaPeekAtLastError(), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
-    CHECK_CUDA_ERROR(cudaDeviceSynchronize(), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
+    CHECK_CUDA_ERROR_B(cudaPeekAtLastError(), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
+    CHECK_CUDA_ERROR_B(cudaDeviceSynchronize(), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
 
     // Copy results back to host
     std::vector<float> gradInput(inputFlatSize);
-    CHECK_CUDA_ERROR(cudaMemcpy(gradInput.data(), d_gradInput, inputFlatSize * sizeof(float), cudaMemcpyDeviceToHost), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
-    CHECK_CUDA_ERROR(cudaMemcpy(weights.data(), d_weights, outputSize * inputSize * sizeof(float), cudaMemcpyDeviceToHost), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
-    CHECK_CUDA_ERROR(cudaMemcpy(biases.data(), d_biases, outputSize * sizeof(float), cudaMemcpyDeviceToHost), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
+    CHECK_CUDA_ERROR_B(cudaMemcpy(gradInput.data(), d_gradInput, inputFlatSize * sizeof(float), cudaMemcpyDeviceToHost), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
+    CHECK_CUDA_ERROR_B(cudaMemcpy(weights.data(), d_weights, outputSize * inputSize * sizeof(float), cudaMemcpyDeviceToHost), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
+    CHECK_CUDA_ERROR_B(cudaMemcpy(biases.data(), d_biases, outputSize * sizeof(float), cudaMemcpyDeviceToHost), { cudaFree(d_grad); cudaFree(d_outputCache); cudaFree(d_inputCache); cudaFree(d_deltas); cudaFree(d_biases); cudaFree(d_weights); cudaFree(d_gradInput); });
 
     // Free device memory
-    CHECK_CUDA_ERROR(cudaFree(d_grad), {});
-    CHECK_CUDA_ERROR(cudaFree(d_outputCache), {});
-    CHECK_CUDA_ERROR(cudaFree(d_inputCache), {});
-    CHECK_CUDA_ERROR(cudaFree(d_deltas), {});
-    CHECK_CUDA_ERROR(cudaFree(d_weights), {});
-    CHECK_CUDA_ERROR(cudaFree(d_biases), {});
-    CHECK_CUDA_ERROR(cudaFree(d_gradInput), {});
+    CHECK_CUDA_ERROR_B(cudaFree(d_grad), {});
+    CHECK_CUDA_ERROR_B(cudaFree(d_outputCache), {});
+    CHECK_CUDA_ERROR_B(cudaFree(d_inputCache), {});
+    CHECK_CUDA_ERROR_B(cudaFree(d_deltas), {});
+    CHECK_CUDA_ERROR_B(cudaFree(d_weights), {});
+    CHECK_CUDA_ERROR_B(cudaFree(d_biases), {});
+    CHECK_CUDA_ERROR_B(cudaFree(d_gradInput), {});
 
     return gradInput;
 }
-
-
-/*std::vector<float> backward_cuda(const std::vector<float>& grad, const std::vector<float>& outputCache,
-                                 const std::vector<float>& inputCache, std::vector<float>& weights,
-                                 std::vector<float>& biases, int outputSize, int inputSize,
-                                 int batchSize, float learningRate, ActivationFunctionType act_type, int block_size) {
-    int gradFlatSize = batchSize * outputSize;
-    int inputFlatSize = batchSize * inputSize;
-
-    float *d_grad, *d_outputCache, *d_inputCache, *d_deltas, *d_biases, *d_weights, *d_gradInput;
-
-    // Allocate device memory
-    cudaMalloc(&d_grad, gradFlatSize * sizeof(float));
-    cudaMalloc(&d_outputCache, gradFlatSize * sizeof(float));
-    cudaMalloc(&d_inputCache, inputFlatSize * sizeof(float));
-    cudaMalloc(&d_deltas, gradFlatSize * sizeof(float));
-    cudaMalloc(&d_biases, outputSize * sizeof(float));
-    cudaMalloc(&d_weights, outputSize * inputSize * sizeof(float));
-    cudaMalloc(&d_gradInput, inputFlatSize * sizeof(float));
-
-    // Copy data to device
-    cudaMemcpy(d_grad, grad.data(), gradFlatSize * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_outputCache, outputCache.data(), gradFlatSize * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_inputCache, inputCache.data(), inputFlatSize * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_weights, weights.data(), outputSize * inputSize * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_biases, biases.data(), outputSize * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemset(d_gradInput, 0, inputFlatSize * sizeof(float));
-
-    // Kernel launch configurations
-    int numBlocksDeltas = (outputSize + block_size - 1) / block_size;
-    int numBlocksWeights = ((outputSize * inputSize) + block_size - 1) / block_size;
-
-    // Launch kernels
-    computeDeltasAndBiases<<<numBlocksDeltas, block_size>>>(d_grad, d_outputCache, d_deltas, d_biases, batchSize, outputSize, learningRate, act_type);
-
-    updateWeightsAndGradInput<<<numBlocksWeights, block_size>>>(d_deltas, d_inputCache, d_weights, d_gradInput, inputSize, outputSize, batchSize, learningRate);
-
-    // Synchronize
-    cudaDeviceSynchronize();
-
-    // Copy results back to host
-    std::vector<float> gradInput(inputFlatSize);
-    cudaMemcpy(gradInput.data(), d_gradInput, inputFlatSize * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(weights.data(), d_weights, outputSize * inputSize * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(biases.data(), d_biases, outputSize * sizeof(float), cudaMemcpyDeviceToHost);
-
-    // Free device memory
-    cudaFree(d_grad);
-    cudaFree(d_outputCache);
-    cudaFree(d_inputCache);
-    cudaFree(d_deltas);
-    cudaFree(d_weights);
-    cudaFree(d_biases);
-    cudaFree(d_gradInput);
-
-    return gradInput;
-}*/
-
-
-
-
-
-

@@ -13,7 +13,7 @@ extern std::chrono::duration<double> elapsed_b_kernel_deltas;
 extern std::chrono::duration<double> elapsed_b_kernel_weights;
 
 
-#define CHECK_CUDA_ERROR(call, cleanup) do {                                     \
+#define CHECK_CUDA_ERROR_B(call, cleanup) do {                                   \
     cudaError_t err = call;                                                      \
     if (err != cudaSuccess) {                                                    \
         std::cerr << "CUDA Error in Backward: " << cudaGetErrorString(err)       \

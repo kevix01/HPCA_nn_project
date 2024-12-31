@@ -7,7 +7,8 @@
 
 enum DeviceType {
     CPU,
-    CUDA
+    CUDA,
+    NONE
 };
 
 #endif // DEVICE_TYPE_H

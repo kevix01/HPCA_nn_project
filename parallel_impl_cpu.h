@@ -7,8 +7,7 @@
 
 enum ParallelImplCpu {
     No,
-    OpenMP,
-    processes
+    OpenMP
 };
 
 #endif //CPU_PARALLEL_IMPL_H

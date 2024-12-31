@@ -12,7 +12,6 @@
 #include "parallel_impl_cpu.h"
 #include "device_type.h"
 #include "linear_layer.h"
-#include "parameters.h"
 
 extern std::chrono::duration<double> elapsed_backward;
 extern std::chrono::duration<double> elapsed_forward;
@@ -20,10 +19,9 @@ extern std::chrono::duration<double> elapsed_forward;
 class NeuralNetwork {
 public:
     explicit NeuralNetwork(DeviceType device);
-    // ~NeuralNetwork() = default;
 
     // Add a layer to the network
-    void addLayer(int inputSize, int outputSize, ActivationFunction activation);
+    void addLayer(int inputSize, int outputSize, ActivationFunction activation, int weightsInitSeed);
 
     // Train the network using mini-batches
     void train(const std::vector<std::vector<float>>& inputs, const std::vector<int>& labels,
