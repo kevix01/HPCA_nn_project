@@ -35,8 +35,8 @@ The program automatically trains the network on the REJAFADA dataset, which cont
 
 To build and run this project, you need the following dependencies:
 - CMake (version 3.28 or higher)
-- CUDA Toolkit (if using GPU)
-- OpenMP (if using CPU parallelism)
+- CUDA Toolkit (for GPU parallelism)
+- OpenMP (for CPU parallelism)
 - C++ Compiler with C++20 support (e.g., g++ or clang++)
 
 ---
