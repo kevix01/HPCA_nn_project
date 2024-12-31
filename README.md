@@ -1,6 +1,6 @@
 # HPCA Neural Network Project
 
-This project implements a neural network with support for both CPU and CUDA execution (parallelization in forward and backward steps). It includes features like forward and backward propagation, activation functions (ReLU and Sigmoid), and parallelization using OpenMP for CPU and CUDA for GPU.
+This project implements a neural network with support for both CPU and CUDA execution (in forward and backward steps). It includes features like forward and backward propagation, activation functions (ReLU and Sigmoid), and parallelization using OpenMP for CPU and CUDA for GPU.
 
 ## Table of Contents
 1. [Project Overview](#project-overview)
