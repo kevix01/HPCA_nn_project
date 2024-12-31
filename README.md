@@ -1,6 +1,6 @@
 # HPCA Neural Network Project
 
-This project implements a neural network with support for both CPU and CUDA execution (in forward and backward steps). It includes features like forward and backward propagation, activation functions (ReLU and Sigmoid), and parallelization using OpenMP for CPU and CUDA for GPU.
+This project implements a neural network with support for both CPU and CUDA execution (in forward and backward steps). It includes features like forward and backward propagation, activation functions (ReLU and Sigmoid), and parallelization using OpenMP for CPU and CUDA for GPU. Time measurements are also included for performance analysis.
 
 ## Table of Contents
 1. [Project Overview](#project-overview)
@@ -18,6 +18,7 @@ The project consists of a neural network implementation that can be executed on 
 - Activation functions: ReLU and Sigmoid.
 - Parallelization: OpenMP for CPU and CUDA for GPU.
 - Command-line configuration: Device type, batch size, learning rate, and more.
+- High performance clocks for timing measurements.
 
 The program automatically trains the network on the REJAFADA dataset, which contains **6824 features** and **1996 samples**. During training, the loss for each epoch is displayed, allowing you to monitor the model's progress. After training, the program performs a prediction step and calculates the final accuracy of the model.
 
@@ -26,6 +27,7 @@ The program automatically trains the network on the REJAFADA dataset, which cont
 - **Prediction**: After training, the network predicts the labels for the dataset and computes the accuracy.
 - **Flexibility**: The network architecture and training parameters can be configured via command-line arguments, such as the number of neurons in hidden layers, batch size, and learning rate.
 - **Performance**: Forward and backward can be parallelized using OpenMP for CPU and CUDA for GPU.
+- **Analysis**: The program includes high-performance clocks to measure the time taken by forward and backward steps.
 
 ### Dataset:
 - **REJAFADA**: A dataset with 6824 features and 1996 samples. The dataset is loaded and normalized.
