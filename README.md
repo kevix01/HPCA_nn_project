@@ -3,13 +3,12 @@
 This project implements a neural network with support for both CPU and CUDA execution. It includes features like forward and backward propagation, activation functions (ReLU and Sigmoid), and parallelization using OpenMP for CPU and CUDA for GPU.
 
 ## Table of Contents
-1. Project Overview
-2. Dependencies
-3. Build Instructions
-4. Execution
-5. Command-Line Arguments
-6. Project Structure
-7. License
+1. [Project Overview](#project-overview)
+2. [Dependencies](#dependencies)
+3. [Build Instructions](#build-instructions)
+4. [Execution](#execution)
+5. [Command-Line Arguments](#command-line-arguments)
+7. [License](#license)
 
 ---
 ## Project Overview
