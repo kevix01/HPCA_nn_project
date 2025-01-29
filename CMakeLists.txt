@@ -21,7 +21,6 @@ add_executable(hpca_nn
         main.cpp
         neural_network.cpp
         linear_layer.cpp
-        neuron.cpp
         device_type.h
         forward_cuda.h
         forward_cuda.cu
